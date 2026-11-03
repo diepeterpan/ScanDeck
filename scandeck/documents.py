@@ -63,7 +63,7 @@ def split_pages(path: Path, target_dir: Path) -> list[Path]:
                 single = pypdfium2.PdfDocument.new()
                 try:
                     single.import_pages(source, [index])
-                    target = target_dir / f"{path.stem}_seite-{index + 1:02d}.pdf"
+                    target = target_dir / f"{path.stem}_page-{index + 1:02d}.pdf"
                     single.save(str(target))
                     written.append(target)
                 finally:

@@ -31,7 +31,7 @@ self.addEventListener("activate", (event) => {
 
 /* Push: erreicht die installierte App auch, wenn sie geschlossen ist. */
 self.addEventListener("push", (event) => {
-  let payload = { title: "ScanDeck", body: "Scan fertig.", tag: "scandeck" };
+  let payload = { title: "ScanDeck", body: "Scan complete.", tag: "scandeck" };
   try {
     if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {

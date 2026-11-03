@@ -34,7 +34,7 @@ const STAGE_TEXT = {
   upload: "Uploading to Paperless-ngx …",
   done: "Finished",
   error: "Failed",
-  cancelled: "Abgebrochen",
+  cancelled: "Cancelled",
 };
 
 const STAGE_ORDER = ["connect", "capture", "store", "upload"];
@@ -352,7 +352,7 @@ function renderChips(container, tags, onRemove) {
     const remove = document.createElement("button");
     remove.type = "button";
     remove.textContent = "×";
-    remove.setAttribute("aria-label", `${tag} entfernen`);
+    remove.setAttribute("aria-label", `Remove ${tag}`);
     remove.addEventListener("click", () => onRemove(tag));
     chip.append(remove);
     container.append(chip);
@@ -408,8 +408,8 @@ function renderTags() {
     renderTags();
   });
   $("#default-tags-hint").textContent = state.defaultTags.length
-    ? `Immer mitgesendet: ${state.defaultTags.join(", ")}`
-    : "Noch keine Standard-Tags hinterlegt.";
+    ? `Always sent: ${state.defaultTags.join(", ")}`
+    : "No default tags configured yet.";
 }
 
 function renderQuickRow() {
@@ -430,8 +430,8 @@ function renderTiles() {
   const scannerHost = config.scanner_url ? config.scanner_url.replace(/^https?:\/\//, "") : "—";
   const scanner = $("#tile-scanner");
   scanner.className = `tile ${config.scanner_url ? "ok" : "off"}`;
-  $("#tile-scanner-value").textContent = config.scanner_url ? "Verbunden" : "Fehlt";
-  $("#tile-scanner-sub").textContent = config.scanner_url ? scannerHost : "nicht konfiguriert";
+  $("#tile-scanner-value").textContent = config.scanner_url ? "Connected" : "Missing";
+  $("#tile-scanner-sub").textContent = config.scanner_url ? scannerHost : "not configured";
 
   const paperless = $("#tile-paperless");
   const paperlessReady = config.upload_to_paperless && config.paperless_url && config.paperless_token_configured;
@@ -439,16 +439,16 @@ function renderTiles() {
   $("#tile-paperless-value").textContent = paperlessReady ? "Active" : config.upload_to_paperless ? "Incomplete" : "Off";
   $("#tile-paperless-sub").textContent = config.paperless_url
     ? config.paperless_url.replace(/^https?:\/\//, "")
-    : "nur lokale Ablage";
+    : "local storage only";
 
   const ha = $("#tile-ha");
   ha.className = `tile ${config.ha_enabled && config.ha_api_key_configured ? "ok" : "off"}`;
-  $("#tile-ha-value").textContent = config.ha_enabled ? "Bereit" : "Aus";
+  $("#tile-ha-value").textContent = config.ha_enabled ? "Ready" : "Off";
   $("#tile-ha-sub").textContent = config.ha_enabled
     ? config.ha_webhook_url
       ? "Trigger + Webhook"
-      : "Trigger aktiv"
-    : "keine Automatisierung";
+      : "Trigger active"
+    : "no automation";
 }
 
 function renderLastScan(scanState) {
@@ -499,10 +499,10 @@ sensor:
 
 # Example: Motion sensor triggers a scan
 automation:
-  - alias: "Scan bei Bewegung am Schreibtisch"
+  - alias: "Scan on desk motion"
     trigger:
       - platform: state
-        entity_id: binary_sensor.schreibtisch_bewegung
+        entity_id: binary_sensor.desk_motion
         to: "on"
     condition:
       - condition: state
@@ -572,9 +572,9 @@ function applyConfig(config) {
 // Eingeklappt heisst nicht "unsichtbar": am Titel steht, ob es an ist.
 function renderFoldStates(config) {
   const marks = [
-    ["#paperless-state", config.upload_to_paperless, config.upload_to_paperless ? "aktiv" : "aus"],
-    ["#ha-state", config.ha_enabled, config.ha_enabled ? "aktiv" : "aus"],
-    ["#mqtt-state", config.mqtt_enabled, config.mqtt_enabled ? "aktiv" : "aus"],
+    ["#paperless-state", config.upload_to_paperless, config.upload_to_paperless ? "active" : "off"],
+    ["#ha-state", config.ha_enabled, config.ha_enabled ? "active" : "off"],
+    ["#mqtt-state", config.mqtt_enabled, config.mqtt_enabled ? "active" : "off"],
   ];
   marks.forEach(([selector, on, text]) => {
     const chip = $(selector);
@@ -837,7 +837,7 @@ function renderBatch(batch) {
       ? `Next scan replaces page ${armed + 1}`
       : pages.length === 0
       ? "Scan the first page"
-      : `${pages.length} Seite(n) — weiter scannen oder ablegen`;
+      : `${pages.length} page(s) — continue scanning or save`;
 
   const container = $("#batch-pages");
   container.replaceChildren();
@@ -849,7 +849,7 @@ function renderBatch(batch) {
     const image = document.createElement("img");
     // The rotation belongs in the URL so a turned page reloads its preview.
     image.src = `/api/batch/page/${index}/preview?v=${encodeURIComponent(page.name)}&r=${page.rotation || 0}`;
-    image.alt = `Seite ${index + 1}`;
+    image.alt = `Page ${index + 1}`;
     image.loading = "lazy";
     image.draggable = false;
 
@@ -864,11 +864,11 @@ function renderBatch(batch) {
     const tools = document.createElement("div");
     tools.className = "page-tools";
     tools.append(
-      toolButton("rotate", "Seite um 90° drehen", () => rotatePage(index)),
-      toolButton("replace", index === armed ? "Ersetzen abbrechen" : "Diese Seite neu scannen", () =>
+      toolButton("rotate", "Rotate page 90°", () => rotatePage(index)),
+      toolButton("replace", index === armed ? "Cancel replacement" : "Rescan this page", () =>
         armReplace(index === armed ? null : index)
       ),
-      toolButton("remove", `Seite ${index + 1} entfernen`, () => removePage(index))
+      toolButton("remove", `Remove page ${index + 1}`, () => removePage(index))
     );
 
     // Gross ansehen: auf dem Vorschaubild ist kaum zu erkennen, welche Seite
@@ -888,14 +888,14 @@ function renderBatch(batch) {
 
   const armedNow = armed !== null && armed !== undefined;
   $("#orb-label").textContent = state.running
-    ? "Scannt …"
+    ? "Scanning …"
     : armedNow
-    ? `Seite ${armed + 1} ersetzen`
+    ? `Replace page ${armed + 1}`
     : batch.active
     ? pages.length === 0
-      ? "Erste Seite scannen"
+      ? "Scan first page"
       : "Add page"
-    : "Scan starten";
+    : "Start scan";
 }
 
 function togglePanel(open) {
@@ -1031,7 +1031,7 @@ function renderHistory(data) {
     ? data.open
       ? `${entries.length} scans · ${data.open} pending`
       : `${entries.length} scans · all uploaded`
-    : "Noch keine Scans.";
+    : "No scans yet.";
 
   entries.forEach((job) => {
     const row = document.createElement("div");
@@ -1062,9 +1062,9 @@ function renderHistory(data) {
     const badge = document.createElement("span");
     badge.className = `badge ${job.status}`;
     badge.textContent = STATUS_LABEL[job.status] || job.status;
-    const when = new Date(job.created).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+    const when = new Date(job.created).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" });
     meta.append(badge, document.createTextNode(` ${when}`));
-    if (job.pages > 1) meta.append(document.createTextNode(` · ${job.pages} Seiten`));
+    if (job.pages > 1) meta.append(document.createTextNode(` · ${job.pages} pages`));
     if (job.document_id) meta.append(document.createTextNode(` · #${job.document_id}`));
     main.append(meta);
 
@@ -1208,9 +1208,9 @@ async function checkForUpdate(force = false) {
       chip.classList.remove("has-update");
       $("#version-chip-text").textContent = `v${info.current}`;
       status.textContent = info.error
-        ? "GitHub lieferte keine Versionsinfo."
+        ? "GitHub did not return version information."
         : info.latest
-        ? "Aktuellste Version installiert."
+        ? "Latest version is installed."
         : "No release published on GitHub yet.";
       link.hidden = true;
       if (force && !info.error) toast("Up to date", "success");
@@ -1257,7 +1257,7 @@ function renderElapsed() {
   const remaining =
     state.eta === null ? null : Math.max(0, state.eta - Math.round((Date.now() - state.etaAt) / 1000));
   $("#progress-elapsed").textContent = remaining
-    ? `${elapsed} s · noch ca. ${remaining} s`
+    ? `${elapsed} s · approx. ${remaining} s remaining`
     : `${elapsed} s`;
 }
 
@@ -1297,12 +1297,12 @@ function setScanning(running) {
   state.running = running;
   document.body.classList.toggle("is-scanning", running);
   $("#scan-button").disabled = running;
-  $("#orb-label").textContent = running ? "Scannt …" : "Scan starten";
+  $("#orb-label").textContent = running ? "Scanning …" : "Start scan";
   if (running) {
     showProgress();
-    setStatus("Scannt", "scanning");
+    setStatus("Scanning", "scanning");
   } else {
-    setStatus("Bereit", "ready");
+    setStatus("Ready", "ready");
     setTimeout(() => setProgress(0), 900);
   }
 }
@@ -1408,7 +1408,7 @@ function handleProgress(event) {
         loadBatch().catch(() => {});
         // Ein Einzug liefert mehrere Blatt auf einmal; die Meldung muss das sagen.
         const added = event.added ?? 1;
-        const what = added > 1 ? `${added} Seiten erfasst` : `Seite ${(event.page_index ?? 0) + 1} erfasst`;
+        const what = added > 1 ? `${added} pages captured` : `Page ${(event.page_index ?? 0) + 1} captured`;
         toast(`${what} · ${event.pages} in batch`, "success");
       } else {
         showPreview(event.file);
@@ -1433,13 +1433,13 @@ function handleProgress(event) {
 
   if (event.stage === "error") {
     $("#progress-title").textContent = "Failed";
-    $("#progress-stage").textContent = event.error || "Unbekannter Fehler";
+    $("#progress-stage").textContent = event.error || "Unknown error";
     $("#scan-cancel").hidden = true;
     // Fehler bleiben laenger stehen: sie wollen gelesen werden, nicht erahnt.
     setTimeout(() => {
       hideProgress();
       setScanning(false);
-      setStatus("Fehler", "error");
+      setStatus("Error", "error");
       signalDone("error");
       toast(event.error || "Scan failed", "error");
     }, 900);
@@ -1455,7 +1455,7 @@ function connectEvents() {
   };
   stream.onerror = () => setStatus("Offline", "offline");
   stream.onopen = () => {
-    if (!state.running) setStatus("Bereit", "ready");
+    if (!state.running) setStatus("Ready", "ready");
   };
 }
 
@@ -1502,7 +1502,7 @@ async function runDiscovery(subnetId, containerId, targetId, auto = false) {
         Object.assign(document.createElement("p"), {
           textContent: auto
             ? "No scanner found. Please enter the network manually below."
-            : "Kein eSCL-Scanner gefunden.",
+            : "No eSCL scanner found.",
         })
       );
       return;
@@ -1510,7 +1510,7 @@ async function runDiscovery(subnetId, containerId, targetId, auto = false) {
     if (found.subnet) {
       setValue(subnetId, found.subnet);
       container.append(
-        Object.assign(document.createElement("p"), { textContent: `Gefunden in ${found.subnet}` })
+        Object.assign(document.createElement("p"), { textContent: `Found in ${found.subnet}` })
       );
     }
     found.devices.forEach((device) => {
@@ -2057,7 +2057,7 @@ async function renderPushState() {
   const disable = $("#push-disable");
   if (!info) return;
   state.push = info;
-  chip.textContent = info.enabled ? "aktiv" : "aus";
+  chip.textContent = info.enabled ? "active" : "off";
   chip.classList.toggle("on", Boolean(info.enabled));
   disable.hidden = !info.enabled;
   $("#push-info").textContent = info.enabled
@@ -2070,7 +2070,7 @@ $("#push-enable").addEventListener("click", async () => {
   button.disabled = true;
   try {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      throw new Error("Dieser Browser kann keine Benachrichtigungen empfangen.");
+      throw new Error("This browser does not support push notifications.");
     }
     if ((await Notification.requestPermission()) !== "granted") {
       throw new Error("Permission required — please allow notifications in browser for this site.");
@@ -2172,14 +2172,14 @@ function showPage(index) {
   if (!pages.length) return closePage();
   state.pageIndex = Math.max(0, Math.min(index, pages.length - 1));
   const page = pages[state.pageIndex];
-  $("#page-title").textContent = `Seite ${state.pageIndex + 1} von ${pages.length}`;
+  $("#page-title").textContent = `Page ${state.pageIndex + 1} of ${pages.length}`;
   const image = $("#page-image");
   image.src = `/api/batch/page/${state.pageIndex}/preview?v=${encodeURIComponent(page.name)}&r=${page.rotation || 0}`;
-  image.alt = `Seite ${state.pageIndex + 1}`;
+  image.alt = `Page ${state.pageIndex + 1}`;
   $("#page-prev").disabled = state.pageIndex === 0;
   $("#page-next").disabled = state.pageIndex === pages.length - 1;
   $("#page-replace").textContent =
-    state.batch.replace_index === state.pageIndex ? "Ersetzen abbrechen" : "Neu scannen";
+    state.batch.replace_index === state.pageIndex ? "Cancel replacement" : "Rescan";
 }
 
 function closePage() {
