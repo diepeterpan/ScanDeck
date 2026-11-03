@@ -96,7 +96,7 @@ def test_a_feeder_run_without_a_batch_becomes_one_document(client, deck, run_sca
     entries = client.get("/api/history").get_json()["jobs"]
     assert len(entries) == 1
     assert entries[0]["pages"] == 5
-    assert "5-seiten" in entries[0]["name"]
+    assert "5-pages" in entries[0]["name"]
     assert pdf_page_count(deck.Path(deck.scan_state["last_file"])) == 5
 
 

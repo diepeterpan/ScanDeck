@@ -1,7 +1,7 @@
 name: Release
 
-# Veroeffentlicht zu jedem Versions-Tag ein GitHub-Release. Der Text stammt aus
-# CHANGELOG.md, damit Release und Changelog nie auseinanderlaufen.
+# Publishes a GitHub Release for every version tag. The release notes are extracted
+# from CHANGELOG.md so release and changelog stay in sync.
 on:
   push:
     tags: ["v*.*.*"]
@@ -16,16 +16,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Release-Text aus dem Changelog bauen
+      - name: Build release notes from changelog
         run: |
           version="${GITHUB_REF_NAME#v}"
           if [ "$version" != "$(cat VERSION)" ]; then
-            echo "Tag $GITHUB_REF_NAME passt nicht zur VERSION-Datei ($(cat VERSION))." >&2
+            echo "Tag $GITHUB_REF_NAME does not match VERSION file ($(cat VERSION))." >&2
             exit 1
           fi
 
-          # Alles zwischen der eigenen Ueberschrift und der naechsten Version.
-          # index() statt Regex, damit die Versionsnummer nicht maskiert werden muss.
+          # Extract everything between current version heading and next version.
           awk -v v="$version" '
             index($0, "## [" v "]") == 1 { flag = 1; next }
             index($0, "## [") == 1 { flag = 0 }
@@ -34,7 +33,7 @@ jobs:
           ' CHANGELOG.md > notes.md
 
           if [ ! -s notes.md ]; then
-            echo "Kein Changelog-Abschnitt fuer $version gefunden." >&2
+            echo "No changelog section found for $version." >&2
             exit 1
           fi
 
@@ -51,11 +50,11 @@ jobs:
             ghcr.io/${owner}/scandeck:${version}
           \`\`\`
 
-          Alternativ mit der [docker-compose.yaml](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/docker-compose.yaml) aus dem Repository.
+          Alternatively using [docker-compose.yaml](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/docker-compose.yaml) from the repository.
 
-          **Image:** \`ghcr.io/${owner}/scandeck:${version}\` — gebaut für linux/amd64 und linux/arm64.
+          **Image:** \`ghcr.io/${owner}/scandeck:${version}\` — built for linux/amd64 and linux/arm64.
 
-          **Ersteinrichtung:** Nach dem Start \`http://<host>:8080\` öffnen; der Assistent fragt Scanner, Paperless-ngx, Format und Automatisierung ab.
+          **Initial setup:** After starting, open \`http://<host>:8080\`; the wizard guides you through scanner, Paperless-ngx, format and automation settings.
           EOF
 
           cat notes.md

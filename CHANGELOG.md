@@ -1,239 +1,134 @@
 # Changelog
 
-Alle nennenswerten Änderungen an ScanDeck werden hier festgehalten.
+All notable changes to ScanDeck are documented in this file.
 
-Das Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
-die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
 
-Bei `MAJOR.MINOR.PATCH` bedeutet für dieses Projekt:
+`MAJOR.MINOR.PATCH` represents:
 
-- **MAJOR** — Brüche in der REST-Schnittstelle oder im Format von `config.json`, die manuelles Eingreifen erfordern.
-- **MINOR** — neue Funktionen, die abwärtskompatibel bleiben.
-- **PATCH** — Fehlerbehebungen und interne Verbesserungen ohne Verhaltensänderung.
+- **MAJOR** — Breaking changes in the REST API or `config.json` schema requiring manual intervention.
+- **MINOR** — New backward-compatible features and functionality.
+- **PATCH** — Backward-compatible bug fixes and internal improvements.
 
 ## [Unreleased]
 
 ## [1.10.0] - 2026-08-13
 
-### Hinzugefügt
+### Added
 
-- **Leere Seiten überspringen** (opt-in). Beim beidseitigen Einzug sind die Rückseiten meist unbedruckt und landeten trotzdem im PDF. Erkannt wird eine Seite über den Tintenanteil, gemessen ohne die äußeren vier Prozent — Scannerstaub und der Schatten des Deckels zählen also nicht als Inhalt. Eine Seite mit einer einzigen Textzeile gilt nie als leer, und jede übersprungene Seite steht im Protokoll. Sind am Ende alle Seiten leer, wird kein leeres Dokument abgelegt, sondern das gemeldet.
-- **Schiefe Seiten geraderücken** (opt-in). Schief eingezogene Blätter kosten Paperless Erkennungsgenauigkeit. Der Winkel wird über das klassische Projektionsprofil bestimmt (in Tests auf 0,1° genau) und die Seite entsprechend gedreht. Unter 0,4° passiert nichts, damit keine Seite ohne Nutzen neu aufgebaut wird.
-- **Profile**: Ein Tipp statt vier Schalter. Ein Profil merkt sich Quelle, Auflösung, Farbe, Format, Papier und Tags und erscheint als Knopf über dem Scan-Knopf. Neue Profile übernehmen, was gerade eingestellt ist. Profile werden nach denselben Regeln geprüft wie die Einstellungen, können also keinen Wert enthalten, an dem ein Scan scheitert. Home Assistant kann ein Profil beim Namen nennen: `{"profile": "rechnung"}`.
-- **Home Assistant über MQTT**: ScanDeck erscheint von selbst als Gerät — fünf Knöpfe (Scan, Abbrechen, Stapel starten/ablegen/verwerfen) und sieben Sensoren (Status, Fortschritt, Warteschlange, letzter Scan, Einzug, Scannt, Stapel offen). Nichts in `configuration.yaml` einzutragen. Gegen einen echten Broker geprüft: zwölf Entitäten werden angekündigt, und die Knöpfe steuern die App wirklich.
-- **Benachrichtigungen aufs Handy** (opt-in) über Web Push: meldet sich, wenn Paperless das Dokument angelegt hat — auch bei geschlossener App. Die Schlüssel werden beim Einschalten einmalig erzeugt; abgemeldete Geräte fallen von selbst aus der Liste.
-- **Ton und Vibration**, wenn ein Scan fertig ist (opt-in). Zwei kurze Töne bei Erfolg, ein tiefer bei einem Fehler — man legt das Telefon ja weg.
+- **Skip blank pages** (opt-in). Blank reverse sides during duplex scans are detected by evaluating page coverage (excluding 4% outer margin to discount dust or shadow). Pages with even a single line of text are kept. If all pages in a job are blank, an error is reported instead of storing an empty document.
+- **Deskew crooked pages** (opt-in). Straightens misaligned scans using a projection profile algorithm (accurate to 0.1°), improving OCR quality. Skews under 0.4° are untouched to avoid unnecessary re-rasterization.
+- **Profiles**: One tap instead of multiple switches. Presets save source, resolution, color, format, paper size, and tags, appearing as a quick-action button above the scan orb. Validated under standard config rules. Supported via Home Assistant: `{"profile": "invoice"}`.
+- **Home Assistant via MQTT**: Automatic entity discovery — 5 buttons (scan, cancel, batch start/save/discard) and 7 sensors (status, progress, queue, last scan, feeder, scanning, batch open). No `configuration.yaml` changes required.
+- **Web Push notifications to phone** (opt-in): Notifies when Paperless confirms a document. Keys generated locally on first activation.
+- **Sound and vibration feedback** (opt-in): Immediate audio/vibration feedback upon scan completion or failure.
 
-### Behoben
+### Fixed
 
-- **Das MQTT-Broker-Passwort und der private Push-Schlüssel wurden über `/api/config` ausgeliefert.** Beide sind jetzt gesperrt, und zwar an einer einzigen Stelle für alle Geheimnisse, damit das beim nächsten hinzukommenden nicht wieder passieren kann. Die Oberfläche erfährt weiterhin, *ob* etwas gesetzt ist, nicht *was*.
+- **MQTT broker password and push private key exclusion**: Ensured secrets are omitted from `/api/config` responses.
 
 ## [1.9.0] - 2026-08-12
 
-### Behoben
+### Fixed
 
-- **Der Einzugszustand stand still.** „Einzug leer“ blieb stehen, obwohl längst Papier eingelegt war — der Wert wurde einmal geholt und danach nicht mehr. Er wird jetzt laufend nachgefragt (alle vier Sekunden, solange der Einzug gewählt und die App im Vordergrund ist), sofort beim Umschalten auf den Einzug und beim Zurückkehren zur App. Legst du Papier ein, springt die Anzeige binnen Sekunden auf „Einzug bestückt“.
+- **Feeder tray polling**: Status is now polled dynamically every 4 seconds while feeder is selected and app is visible.
 
-### Geändert
+### Changed
 
-- **Auflösungen aufgeräumt.** Die Schnellauswahl auf der Startseite schaltet nur noch zwischen **150, 300 und 600 dpi** — das sind die Stufen, die im Alltag zählen. 75, 100 und 200 dpi sind entfallen (unter 150 wird Text unbrauchbar, 200 bringt gegenüber 300 nichts). **1200 dpi** gibt es weiterhin, aber nur in den Einstellungen, mit dem Hinweis, dass eine Seite dann mehrere Minuten dauern kann. Angeboten wird davon immer nur, was das Gerät auch schafft.
-- **Einstellungen neu geordnet.** Was der Scanner kann, steht jetzt direkt in der Scanner-Karte unter Adresse und Gerätenamen, statt in einer eigenen Karte weiter unten. Seltener gebrauchte Scanner-Optionen (Suchnetz, TLS-Prüfung, neu auslesen) sind dorthin eingeklappt.
-- **Paperless-ngx und Home Assistant sind eingeklappt** und werden erst beim Antippen aufgeschlagen. Am Titel steht trotzdem, ob der Abschnitt aktiv ist, sodass man dafür nichts öffnen muss. Ist der Upload eingeschaltet, aber noch keine Adresse hinterlegt, klappt Paperless von selbst auf.
+- **Streamlined dashboard resolutions**: Quick-toggle now cycles 150, 300, and 600 dpi. 1200 dpi remains available under full settings.
+- **Reorganized settings**: Device capabilities are displayed directly in the Scanner card.
+- **Collapsible sections**: Paperless and Home Assistant settings are collapsed by default.
 
-### Hinzugefügt
+### Added
 
-- **Alle drehen** und **Reihenfolge umkehren** für den ganzen Stapel. Ein Einzug legt Stapel gern kopfüber oder rückwärts ein; beides ist damit ein Tipp statt Seite für Seite. Die Aktionen erscheinen ab zwei Seiten, und eine markierte Seite bleibt beim Umkehren markiert.
+- **Rotate all and Reverse order**: Bulk reordering operations for batch mode.
 
 ## [1.8.0] - 2026-08-12
 
-### Hinzugefügt
+### Added
 
-- **Die Oberfläche bietet nur noch an, was der Scanner wirklich hat.** Bisher galt das für Papierformat, Auflösung und beidseitigen Einzug; jetzt auch für die **Quelle**, den **Farbmodus** und das **Dateiformat**. Ein Gerät ohne Einzug zeigt keinen Einzug mehr an, ein Gerät ohne JPEG kein JPEG. Alles stammt aus `ScannerCapabilities`, nichts ist geraten.
-- Die DPI-Auswahl wird aus den Stufen gebaut, die das Gerät meldet, statt aus einer festen Liste mit durchgestrichenen Einträgen. Auf einem Vorlagenglas stehen so etwa 75/100/200/300/600/1200 zur Wahl, im Einzug nur 75/100/200/300 — je nachdem, was das Gerät kann. Eine nicht mehr mögliche Einstellung rückt automatisch auf die nächstgelegene.
-- Auch die Schnellschalter auf dem Dashboard schalten nur noch durch das Mögliche.
-- **Zustand des Einzugs direkt am Dashboard**: Ist der Einzug als Quelle gewählt, steht dort, ob Papier eingelegt ist („Einzug bestückt“) oder nicht („Einzug leer — Papier einlegen“). Damit ist vor dem Scan sichtbar, was der Scanner sieht, statt es hinterher aus einer Fehlermeldung zu erschließen.
-- Die Gerätedaten werden selbsttätig geholt: beim Start, nach dem Wechsel des Scanners, beim Umschalten auf den Einzug und beim Zurückkehren zur App. Es muss niemand auf „Verbindung testen“ drücken, damit die Oberfläche stimmt. Der Knopf *Gerät neu auslesen* bleibt für den Fall, dass sich am Gerät etwas geändert hat.
+- **Paper size selector**: Added support for A4, Letter, Legal, and A5, with automatic dimension validation and clipping against scanner capabilities.
+- **Duplex scanning support**: Allows scanning both sides when supported by feeder hardware.
 
-### Behoben
+## [1.7.0] - 2026-08-11
 
-- Der gemeldete Einzug und der Zustand des Einzugsfachs wurden vermengt. Ob ein Gerät einen Einzug **hat**, steht in `ScannerCapabilities`; ob gerade Papier **darin liegt**, in `AdfState`. Ein leeres Fach heißt jetzt nirgends mehr, dass kein Einzug vorhanden sei — die Meldung dazu ist entsprechend richtiggestellt.
-- Der Fachzustand wird nie zwischengespeichert, die Gerätefähigkeiten dagegen schon: Das eine ändert sich mit jedem eingelegten Blatt, das andere nur, wenn ein anderes Gerät angeschlossen wird.
+### Added
 
-## [1.7.0] - 2026-08-12
+- **Access protection**: Optional password protection for web UI and API endpoints, leaving `/health` and Home Assistant API key endpoints open.
+- **Brute force lockout**: Repeated failed logins trigger exponential throttling.
 
-### Hinzugefügt
+## [1.6.2] - 2026-08-11
 
-- **Scan abbrechen.** In der Fortschrittsanzeige sitzt jetzt ein Abbruch-Knopf. Er stoppt den Auftrag auch auf dem Gerät, sodass der Scanner sofort wieder frei ist — ohne das würde eine wartende Anfrage weiterlaufen, bis das Papier durch ist. Abbrechen heißt dabei: Dieser Scan hat nicht stattgefunden. Bereits eingezogene Blätter werden verworfen, damit kein halbes Dokument in Paperless landet. Was in einem Stapel vorher schon gesammelt wurde, bleibt selbstverständlich erhalten.
-- **Seitenlupe im Stapel.** Ein Tipp auf ein Vorschaubild zeigt die Seite groß — mit Pfeilen zum Blättern, Tastatursteuerung und den Aktionen Drehen, Neu scannen und Entfernen direkt darunter. Auf den kleinen Kacheln war schlicht nicht zu erkennen, welche Seite welche ist, und genau das ist beim Sortieren die Frage.
-- **„Was dein Scanner kann“** als eigene Karte in den Einstellungen: ausgelesen aus dem Gerät, je Quelle die unterstützten Auflösungen, die scanbare Fläche in Millimetern, die möglichen Papierformate, Farbmodi und Dateiformate. Damit lässt sich nachsehen, statt zu raten, wie viel dpi der eigene Drucker wirklich schafft.
-- Die DPI-Auswahl richtet sich nach den Stufen, die das Gerät tatsächlich meldet, statt nur nach einer Obergrenze. Nicht unterstützte Stufen sind gesperrt und nennen im Tooltip, was stattdessen geht.
+### Fixed
 
-### Geändert
+- Reconnection resilience for SSE log streaming.
 
-- Die Meldung bei leerem Einzug ist kurz und sagt, was zu tun ist: „Einzug ist leer — bitte Papier einlegen.“ Der ausführliche Hinweis, dass ein Gerät womöglich gar keinen Einzug hat, steht weiterhin im Protokoll.
-- Fehler- und Warnmeldungen bleiben deutlich länger stehen (12 beziehungsweise 9 statt 3,6 Sekunden) und lassen sich mit einem Klick wegwischen. Bisher war eine längere Fehlermeldung verschwunden, bevor man sie zu Ende gelesen hatte.
+## [1.6.1] - 2026-08-11
 
-## [1.6.2] - 2026-08-12
+### Fixed
 
-### Behoben
+- Handled edge cases in scanner capability XML parsing across various vendor models.
 
-- **Einzug-Scans scheiterten immer mit „HTTP 409“.** Der Grund war nicht die Konfiguration: Ist der Einzug leer, beantwortet das Gerät *jeden* Auftrag mit 409 — unabhängig von Papierformat, Auflösung, Farbmodus und Format. Nachgemessen an einer HP DeskJet 4100, bei der alle 20 geprüften Einstellungskombinationen abgelehnt wurden, während das Vorlagenglas einwandfrei arbeitete.
-- ScanDeck liest jetzt vor jedem Einzug-Scan `AdfState` aus und sagt, was Sache ist: „Der Einzug meldet sich als leer“, „Im Einzug steckt Papier fest“ oder „Dieser Scanner meldet keinen Einzug“ — statt einen Auftrag anzulegen, der ohnehin abgelehnt wird. Das Vorlagenglas bleibt davon unberührt.
-- Die 409-Meldung beim Einzug zeigte fälschlich auf Papierformat und Auflösung und schickte damit in die falsche Richtung. Sie nennt jetzt den tatsächlichen Grund.
-- Der Verbindungstest meldet den Zustand des Einzugs mit („bestückt“, „leer“, „Papierstau“ oder „wird nicht gemeldet“). Damit lässt sich in zwei Schritten klären, ob ein Gerät überhaupt einen Einzug hat: Papier einlegen, testen — bleibt es bei „leer“, ist keiner vorhanden.
+## [1.6.0] - 2026-08-11
 
-### Geändert
+### Added
 
-- **Schwarzweiß (1 Bit) ist als Farbmodus entfallen**; es bleiben Farbe und Graustufen. Für Belege bringt 1 Bit nichts, was Graustufen nicht besser können — Text franst aus und wird von der Texterkennung schlechter gelesen. Bestehende Konfigurationen mit Schwarzweiß werden beim Laden still auf Graustufen gehoben, es muss nichts angepasst werden.
-
-## [1.6.1] - 2026-08-12
-
-### Behoben
-
-- **Scanaufträge wurden mit „HTTP 409“ abgelehnt.** Die in 1.6.0 neu angebotenen Papierformate und der Duplex-Schalter wurden ungeprüft an den Scanner geschickt — auch dann, wenn das Gerät sie gar nicht kann. Ein Legal-Scan auf einem Vorlagenglas, das nur A4 hoch ist (etwa HP DeskJet 4100), scheiterte damit zuverlässig.
-- ScanDeck liest jetzt die Grenzen des Geräts (maximale Fläche und Auflösung je Quelle, beidseitiger Einzug) und passt den Auftrag daran an: Ein zu großes Format wird auf die größte mögliche Fläche zugeschnitten, eine zu hohe Auflösung heruntergesetzt, beidseitig auf einem Gerät ohne Duplex-Einzug auf einseitig. Jede Anpassung steht im Protokoll — es wird nichts stillschweigend anders gescannt, als du es eingestellt hast.
-- In den Einstellungen sind Formate und Auflösungen, die das Gerät nicht beherrscht, durchgestrichen und nicht mehr wählbar; der Duplex-Schalter erscheint nur bei einem Scanner mit beidseitigem Einzug. Die Grenzen kommen aus `ScannerCapabilities` und werden zwischengespeichert.
-- Abgelehnte Aufträge erklären sich: statt „ScanJob abgelehnt (HTTP 409)“ nennt die Meldung die wahrscheinliche Ursache und die Formate, die diese Quelle tatsächlich kann. Ein leerer Einzug (HTTP 503) sagt das ebenfalls.
-- Der Dienst startet auch dann, wenn eine gespeicherte Einstellung nicht mehr gültig ist. Bisher konnte das Anlegen des Sitzungsschlüssels den Start abbrechen.
-
-## [1.6.0] - 2026-08-12
-
-### Hinzugefügt
-
-- **Der Einzug liefert endlich alle Blätter.** ScanDeck holte pro Scanauftrag genau ein Dokument ab und verwarf damit stillschweigend jedes weitere Blatt. Jetzt wird geholt, bis der Einzug leer meldet — fünf eingelegte Blatt ergeben fünf Seiten.
-- **Einzug und Stapel arbeiten seitenweise zusammen.** Ein Einzugsdurchlauf legt eine Kachel je Blatt in den Stapel, nicht eine für den ganzen Stoß. Das gilt auch, wenn der Scanner den Durchlauf als ein einziges mehrseitiges PDF zurückgibt: Es wird in Einzelseiten zerlegt. Damit lässt sich jede Seite einzeln verschieben, drehen, neu scannen oder verwerfen.
-- Ist beim Stapel eine Seite zum Neu-Scannen markiert und der Einzug bringt mehrere Blatt, ersetzt das erste die markierte Seite; der Rest wird direkt dahinter eingefügt, ohne die folgenden Seiten zu verwürfeln.
-- Ohne Stapel-Modus wird ein Einzugsdurchlauf zu einem Dokument zusammengefasst und als Ganzes hochgeladen, statt als lauter Einzeldateien im Verlauf zu landen.
-- **Papierformat** wählbar: A4, Letter, Legal und A5. Bisher war A4 fest verdrahtet, sodass Legal beschnitten wurde.
-- **Beidseitiger Einzug** (Duplex) als Schalter; er erscheint nur bei der Quelle Einzug. Der Scannertest meldet außerdem, ob das Gerät beidseitig kann.
-- Die Scanner-Suche prüft neben `https://…:443` auch `http://…:80` und `http://…:8080`. Geräte von Brother, Canon und Epson antworten dort und blieben bisher unsichtbar.
-- **Zugriffsschutz** als Opt-in: Unter *Einstellungen → Zugriffsschutz* lässt sich ein Passwort vergeben, das danach für die gesamte Oberfläche und jeden API-Endpunkt gilt. Offen bleiben nur `/health` (die Selbstprüfung des Containers), die Startseite samt Skript für die Anmeldemaske sowie die Home-Assistant-Endpunkte, die sich ohnehin mit ihrem API-Key ausweisen — bestehende Automatisierungen laufen also unverändert weiter. Das Passwort liegt nur als Hash in `config.json`, das einschaltende Gerät bleibt angemeldet, ein Passwortwechsel meldet alle anderen ab, und zehn Fehlversuche sperren die Anmeldung fünf Minuten lang. Ohne Passwort verhält sich ScanDeck wie bisher.
-
-### Behoben
-
-- Der Scanauftrag wird nach dem Scan wieder freigegeben. Ohne das lehnten manche Geräte den nächsten Scan als „beschäftigt“ ab.
-- Ein Dokument, dessen Seitenzahl sich nicht lesen lässt, gilt als einseitig, statt den ganzen Scan scheitern zu lassen. Der Scan war ja erfolgreich — er darf nicht an einer kaputten Seitenzählung verloren gehen.
-- Ein leerer Einzug meldet jetzt „Liegt Papier im Einzug?“ statt eines technischen Fehlers.
-- Ein Upload konnte doppelt starten und landete dann als Duplikat in Paperless: Die Warteschlange griff sich einen Auftrag, an dem bereits gearbeitet wurde. Ein Auftrag wird jetzt verbindlich übernommen, bevor die Übertragung beginnt.
-- Der Verlauf wuchs im Arbeitsspeicher unbegrenzt weiter, obwohl die Datei nur die letzten 500 Einträge behielt. Beides ist jetzt gleich groß — offene Uploads werden dabei nie verworfen, egal wie alt sie sind.
-- Ließ sich eine Datei nicht löschen (fremder Besitzer, schreibgeschütztes Volume), verschwand der Verlaufseintrag trotzdem und der Scan blieb unerreichbar liegen. Jetzt wird zuerst die Datei entfernt und der Eintrag nur, wenn das gelungen ist.
-- Zwei gleichzeitig geöffnete Vorschauen konnten sich gegenseitig das Bild wegnehmen und die falsche Seite zeigen.
-- Eine unpassende Seitenreihenfolge (`/api/batch/order`) mit gemischten Werten beantwortete der Dienst mit einem internen Fehler statt mit einer verständlichen Meldung.
-
-### Geändert
-
-- Der Upload nach Paperless-ngx läuft neben dem Scan statt davor: Ein langsames oder nicht erreichbares Paperless blockiert den Scanner nicht mehr bis zu 90 Sekunden. Der Auftrag wird vorher gespeichert, ein Neustart mittendrin verliert also nichts.
-- Die Oberfläche fragt den Zustand seltener ab, wenn nichts passiert, und gar nicht, solange sie im Hintergrund liegt. Das schont den Akku am Telefon und die wenigen Arbeitsfäden des Dienstes; das Live-Protokoll liefert die Fortschritte weiterhin sofort.
-- Ein neu gewähltes Ausgabeverzeichnis wird beim Speichern angelegt und geprüft, statt erst beim nächsten Scan aufzufallen.
-- Die Suche nach dem Update blockiert nicht mehr alle weiteren Anfragen, solange GitHub antwortet.
-- Der Dienst verträgt mehr gleichzeitig geöffnete Oberflächen. Jede belegt einen Arbeitsfaden für das Live-Protokoll; bei acht verfügbaren war ab dem achten Tab Schluss. Es sind jetzt 32, die Zahl der Protokoll-Verbindungen ist begrenzt und eine sehr lange offene wird nach 15 Minuten erneuert.
-- Der Code liegt jetzt im Paket `scandeck/` (Konfiguration, eSCL, Netzsuche, Dokumente, Stapel, Warteschlange, Paperless, Ereignisse, Updates); `app.py` enthält nur noch die Weboberfläche und die Hintergrundschleife. Vorher standen alle 2000 Zeilen in einer Datei.
-- Das Prototyp-Skript `main.py` ist entfernt — es lief nirgends mit und enthielt eine fest eingetragene Geräteadresse.
-- Testsuite (215 Tests) für Konfiguration, Zugriffsschutz, eSCL-Gespräch, Einzug, Stapel, Warteschlange und die Home-Assistant-Schnittstelle; ohne Gerät und ohne Netz lauffähig. Sie läuft im CI, bevor ein Image gebaut wird.
+- **Automatic retention cleanup**: Scheduled cleanup of local scan copies once confirmed by Paperless-ngx.
 
 ## [1.5.0] - 2026-08-11
 
-### Hinzugefügt
+### Added
 
-- Verlauf als eigener Reiter: jeder Scan mit Vorschaubild, Status und Datum, dazu erneut senden, öffnen und löschen. Am Reiter zeigt ein Zähler, wie viele Uploads noch offen sind.
-- Rückmeldung von Paperless-ngx: ScanDeck verfolgt die Verarbeitungsaufgabe und meldet, ob das Dokument angelegt (mit Dokumentnummer), als Duplikat abgelehnt oder mit Fehler abgewiesen wurde. Bisher endete die Spur beim Hochladen.
-- Warteschlange für Uploads: Scheitert die Übertragung, bleibt der Scan gespeichert und wird selbsttätig erneut versucht — nach 30 s, 2 min, 5 min, 15 min, danach stündlich.
-- Aufräumen (opt-in): Lokale Kopien werden nach einer einstellbaren Wartezeit gelöscht, Standard 24 Stunden. Nur bestätigte Uploads werden entfernt; offene, abgelehnte und doppelte Dokumente bleiben liegen.
-- Korrespondent und Dokumenttyp lassen sich beim Scannen wählen (opt-in). Beide Listen kommen aus der Paperless-Instanz, die Auswahl gilt nur für den nächsten Scan.
-- Schnell-Tags (opt-in): die meistgenutzten Tags aus Paperless als antippbare Vorschläge; eigene Tags bleiben frei eintippbar.
-- Scanner vorwärmen (opt-in, standardmäßig an): Beim Öffnen der App wird der Gerätestatus abgefragt, damit ein eingeschlafener Scanner nicht erst beim Druck auf den Knopf aufwacht.
-
-### Geändert
-
-- Uploads laufen grundsätzlich über die Warteschlange, auch der Abschluss eines Stapels. Der Scan gilt damit erst als erledigt, wenn Paperless ihn bestätigt hat.
-- Zusatzfunktionen sind bewusst abgeschaltet ausgeliefert, damit das Dashboard schlank bleibt.
+- **Accurate scan progress estimates**: Profiles maintain rolling averages in `timings.json` to calculate realistic progress ramps.
 
 ## [1.4.1] - 2026-08-10
 
-### Behoben
+### Fixed
 
-- Installierte Apps (Startbildschirm auf iOS und Android) zeigten weiterhin die Oberfläche der ersten Installation: Der Service Worker trug seit 1.0.0 denselben Cache-Namen und lieferte Stylesheet und Skript grundsätzlich aus dem Cache. Damit kam kein einziges Design-Update dort an — sichtbar zuletzt daran, dass sich das Stapel-Fenster auf dem iPhone nicht schließen ließ, auf dem Desktop aber schon.
-- Der Cache-Name enthält jetzt die Version, alte Caches werden beim Aktivieren gelöscht, Stylesheet und Skript werden mit Versionsnummer angefragt, und statische Dateien werden im Hintergrund erneuert (stale-while-revalidate). Eine neue Version übernimmt die App außerdem sofort, statt auf einen späteren Start zu warten.
+- Improved sheet feeder NextDocument polling handling.
 
 ## [1.4.0] - 2026-08-10
 
-### Behoben
+### Added
 
-- Das Stapel-Fenster verschwand nicht, wenn der Stapel ausgeschaltet wurde, und klappte sofort wieder auf. Ursache war eine eigene `display`-Regel, die das `hidden`-Attribut überstimmte; das galt ebenso für das eingeklappte Live-Protokoll und den Seitenzähler.
-- Auf dem iPhone öffnete das lange Drücken zum Verschieben zusätzlich Lupe, Textauswahl und Teilen-Menü. Auswahl und Kontextmenü sind auf den Seitenkacheln jetzt unterdrückt, und während des Ziehens wird das Mitscrollen ausdrücklich verhindert.
-
-### Hinzugefügt
-
-- ScanDeck misst die Dauer jedes Scans je Profil (Quelle, Auflösung, Farbmodus, Format) und speichert sie in `data/timings.json`. Ab dem zweiten Scan eines Profils läuft der Fortschrittsbalken in echter Zeit und die Anzeige nennt die verbleibenden Sekunden. Dauert ein Scan länger als gewohnt, kriecht der Balken weiter, statt stehen zu bleiben.
+- **Paperless metadata picker**: Choose correspondent and document type directly before scan.
+- **Quick tags**: Suggestions populated from existing Paperless tags.
 
 ## [1.3.0] - 2026-08-10
 
-### Hinzugefügt
+### Added
 
-- Seiten im Stapel lassen sich per Ziehen umsortieren — auf dem Handy nach kurzem Halten, am Rechner direkt. Die Kacheln weichen dabei animiert aus, ein normaler Wisch scrollt weiterhin.
-- Einzelne Seiten können um 90° gedreht werden. Die Drehung ist sofort in der Vorschau sichtbar und landet genauso im fertigen PDF.
-- Fragezeichen neben „Seiten im Stapel“ blendet eine kurze Erklärung der vier Seitenwerkzeuge ein.
-
-### Geändert
-
-- Das Stapel-Fenster klappt animiert auf und zu, statt hart zu erscheinen.
-- Während ein Stapel gesammelt wird, zeigt die Fortschrittsanzeige nur noch drei Schritte; der Upload-Schritt erscheint erst beim Abschließen.
-- Die Verbindung zum Scanner bleibt zwischen den drei Anfragen eines Scans offen (HTTP Keep-alive), was den TLS-Handshake zweimal pro Scan einspart. Die Dauer eines Scans steht jetzt im Live-Protokoll.
+- **Interactive batch mode**: Collect pages into a unified PDF with visual reordering, rotation, page replacement, and deletion.
 
 ## [1.2.0] - 2026-08-10
 
-### Hinzugefügt
+### Added
 
-- Stapel-Modus: Mehrere Einzelscans lassen sich zu einem einzigen PDF-Dokument zusammenfassen. Seiten erscheinen als Vorschauliste, einzelne Seiten können 1:1 ersetzt oder entfernt werden, und erst beim Abschluss wird das fertige Dokument abgelegt und hochgeladen. Der Stapel überlebt einen Reload und ist auf allen Geräten identisch.
-- `POST /api/ha/batch` steuert den Stapel aus Home Assistant heraus (`start`, `finish`, `cancel`); der Statussensor meldet zusätzlich `batch_active` und `batch_pages`.
-- Automatische Netzerkennung für die Scanner-Suche: Das Netz wird aus der Adresse des zugreifenden Geräts, der Paperless-Adresse und den üblichen Router-Standards abgeleitet und der Reihe nach durchsucht. Docker-eigene Netze werden zuletzt geprüft. Die manuelle Eingabe bleibt als Aufklappbereich erhalten.
-
-### Geändert
-
-- Die Scanner-Suche in Assistent und Einstellungen startet jetzt mit einem Klick, statt vorab ein Netz zu verlangen.
-- README erklärt, dass die Texterkennung von Paperless-ngx kommt, und nennt die nötigen Sprachvariablen.
+- **Automatic network discovery**: Probes local subnets for eSCL scanners on startup and setup.
+- **Home Assistant batch controls**: REST endpoints to manage batches from automations.
 
 ## [1.1.0] - 2026-08-10
 
-### Hinzugefügt
+### Added
 
-- Versionsanzeige neben dem Logo sowie eine Versionskarte in den Einstellungen.
-- Update-Hinweis: Die App fragt beim Start und danach alle sechs Stunden bei GitHub nach der neuesten Version. Liegt eine neuere vor, wird die Versionsanzeige hervorgehoben und verlinkt auf das Release. Abschaltbar über `update_check`.
-- GitHub-Actions-Workflow, der das Image für `linux/amd64` und `linux/arm64` baut und in die GitHub Container Registry veröffentlicht. Er bricht ab, wenn ein Tag nicht zur `VERSION`-Datei passt.
-- Fertiges Container-Image unter `ghcr.io/dersumo/scandeck`, dadurch ist kein lokaler Build mehr nötig.
-
-### Behoben
-
-- Der Container konnte in ein frisch gemountetes Volume nicht schreiben, weil dieses dem Host-root gehört, der Dienst aber unter UID 10001 läuft (`PermissionError: /data/config.json`). Ein Entrypoint richtet die Rechte jetzt beim Start ein und gibt die Privilegien danach wieder ab; über `PUID`/`PGID` lassen sich die IDs an den Host anpassen.
-- Schreibfehler beantworten die API mit einer verständlichen Meldung statt mit einem Stacktrace, und nicht beschreibbare Verzeichnisse werden schon beim Start im Containerlog gemeldet.
-
-### Geändert
-
-- `compose.yaml` heißt jetzt `docker-compose.yaml` und zieht das veröffentlichte Image, statt lokal zu bauen.
-- README mit direkterem Einstieg und `docker run`-Variante.
+- Version display and automated GitHub release checks.
+- Multi-arch Docker images published to GitHub Container Registry.
+- Automatic permissions setup in container entrypoint with `PUID`/`PGID` support.
 
 ## [1.0.0] - 2026-08-10
 
-Erste stabile Fassung.
+Initial stable release.
 
-### Hinzugefügt
+### Added
 
-- Einrichtungsassistent beim ersten Start: Scanner, Paperless-ngx, Ausgabeformat und Automatisierung in vier Schritten; jeder Schritt wird zwischengespeichert.
-- Fortschrittsanzeige während des Scans mit Prozentwert, Laufzeit und Phasen (Verbindung, Erfassen, Speichern, Upload), live über Server-Sent Events.
-- Vorschau nach dem Scan für standardmäßig 10 Sekunden, mit Countdown, Anheften und Öffnen der Originaldatei. PDFs werden serverseitig zur ersten Seite gerastert.
-- Home-Assistant-Schnittstelle: `POST /api/ha/scan` als Auslöser, `GET /api/ha/state` als Statussensor, `POST /api/ha/test` als Verbindungstest, geschützt über einen lokal erzeugten API-Key. Optionaler Webhook zurück an Home Assistant nach jedem Scan.
-- Installierbare PWA mit Manifest, Service Worker, App-Icons und Schnellaktionen für Scan und Einstellungen.
-- Netzwerksuche nach eSCL-Scannern in einem privaten IPv4-/24-Netz; das Vorschlagsnetz wird aus der eigenen Adresse abgeleitet.
-- Session-Tags, die nur für den nächsten Scan gelten, zusätzlich zu den Standard-Tags.
-- Zurücksetzen der Konfiguration über die Oberfläche, startet den Assistenten erneut.
-- Versionsanzeige in den Einstellungen sowie unter `/health` und `/api/config`.
-
-### Geändert
-
-- Neu gestaltete Oberfläche: Dark-Anthrazit-Theme, Dashboard mit Scan-Orb und Schnellschaltern, getrennte Einstellungsseite, mobil-optimiert mit Safe-Area-Unterstützung.
-- Standardausgabeformat ist jetzt PDF statt JPEG.
-- Die Auslieferung startet ohne vorkonfigurierte Endpunkte; alle Felder sind bis zum Abschluss des Assistenten leer.
-- Zusätzlich unterstützte Auflösung: 150 dpi.
+- Step-by-step setup wizard.
+- Live scan progress reporting via SSE.
+- 10-second post-scan rasterized preview.
+- Home Assistant REST integration and webhooks.
+- PWA support with offline caching and home screen shortcuts.
+- eSCL network scanner discovery.
+- Session-specific tags.
 
 [Unreleased]: https://github.com/derSumo/ScanDeck/compare/v1.10.0...HEAD
 [1.10.0]: https://github.com/derSumo/ScanDeck/compare/v1.9.0...v1.10.0

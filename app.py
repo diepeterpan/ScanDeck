@@ -144,16 +144,16 @@ def run_mqtt_command(command: str) -> None:
         cancel_active_scan()
     elif command == "batch_start":
         batch.begin()
-        logs.publish("Stapel über Home Assistant gestartet.", "success")
+        logs.publish("Batch started via Home Assistant.", "success")
     elif command == "batch_finish":
         start_batch_finish([], {}, "mqtt")
     elif command == "batch_cancel":
         batch.clear()
-        logs.publish("Stapel über Home Assistant verworfen.", "warning")
+        logs.publish("Batch discarded via Home Assistant.", "warning")
     elif command.startswith("profile:"):
         profile_scan(command.split(":", 1)[1], "mqtt")
     else:
-        logs.publish(f"Unbekannter MQTT-Befehl: {command}", "warning")
+        logs.publish(f"Unknown MQTT command: {command}", "warning")
 
 
 mqtt_bridge = MqttBridge(logs, run_mqtt_command)
@@ -175,7 +175,7 @@ def mqtt_snapshot() -> dict[str, Any]:
         "queue": jobs.pending_count(),
         "batch_active": batch.active(),
         "batch_pages": batch.count(),
-        "feeder": ADF_LABELS.get(scan_state.get("feeder", ""), "unbekannt"),
+        "feeder": ADF_LABELS.get(scan_state.get("feeder", ""), "unknown"),
     }
 
 
@@ -204,7 +204,7 @@ def session_secret() -> str:
         # not stop the service from coming up at all. Sessions then last until
         # the next restart, and the real problem is reported where it belongs:
         # the moment someone saves the settings.
-        print(f"ScanDeck: Sitzungsschluessel nicht gespeichert ({error}).", file=sys.stderr, flush=True)
+        print(f"ScanDeck: Session key could not be saved ({error}).", file=sys.stderr, flush=True)
     return secret
 
 
@@ -241,7 +241,7 @@ def guard() -> Any:
         return None
     if is_authenticated():
         return None
-    return jsonify({"error": "Anmeldung erforderlich.", "auth_required": True}), 401
+    return jsonify({"error": "Authentication required.", "auth_required": True}), 401
 
 
 def check_writable(directory: Path, label: str) -> None:
@@ -253,8 +253,8 @@ def check_writable(directory: Path, label: str) -> None:
         probe.unlink()
     except OSError as error:
         message = (
-            f"{label} ({directory}) ist nicht beschreibbar: {error.strerror or error}. "
-            "Bitte die Rechte des gemounteten Ordners pruefen oder PUID/PGID setzen."
+            f"{label} ({directory}) is not writable: {error.strerror or error}. "
+            "Please check mounted directory permissions or configure PUID/PGID."
         )
         logs.publish(message, "error")
         print(f"ScanDeck: {message}", file=sys.stderr, flush=True)
@@ -262,8 +262,8 @@ def check_writable(directory: Path, label: str) -> None:
 
 mqtt_bridge.apply(store.get())
 
-check_writable(APP_DATA_DIR, "Konfigurationsverzeichnis")
-check_writable(Path(store.get()["output_dir"]), "Scan-Ablage")
+check_writable(APP_DATA_DIR, "Configuration directory")
+check_writable(Path(store.get()["output_dir"]), "Scan storage directory")
 
 
 # --------------------------------------------------------------------------- #
@@ -292,7 +292,7 @@ def attempt_upload(job_id: str, config: dict[str, Any] | None = None) -> bool:
         return False  # already gone, or another thread is uploading it
     path = Path(job["path"])
     if not path.exists():
-        jobs.update(job_id, status="failed", error="Datei ist nicht mehr vorhanden.")
+        jobs.update(job_id, status="failed", error="File no longer exists.")
         return False
 
     config = config or store.get()
@@ -305,7 +305,7 @@ def attempt_upload(job_id: str, config: dict[str, Any] | None = None) -> bool:
         return True
     except (requests.RequestException, RuntimeError) as error:
         jobs.schedule_retry(job_id, str(error))
-        logs.publish(f"Upload von {job['name']} fehlgeschlagen, wird erneut versucht: {error}", "warning")
+        logs.publish(f"Upload of {job['name']} failed, will retry: {error}", "warning")
         return False
 
 
@@ -330,10 +330,10 @@ def follow_up_task(job: dict[str, Any], config: dict[str, Any]) -> None:
             error=None,
             confirmed_at=datetime.now().isoformat(timespec="seconds"),
         )
-        document = f" als Dokument #{state['document_id']}" if state["document_id"] else ""
-        logs.publish(f"Paperless hat {job['name']}{document} angelegt.", "success")
-        # Das ist der Moment, auf den man wartet, waehrend das Telefon daneben liegt.
-        push_service.notify("Scan abgelegt", f"{job['name']} liegt in Paperless{document}.")
+        document = f" as document #{state['document_id']}" if state["document_id"] else ""
+        logs.publish(f"Paperless created {job['name']}{document}.", "success")
+        # Moment to notify phone
+        push_service.notify("Scan saved", f"{job['name']} is stored in Paperless{document}.")
         publish_mqtt_state()
         return
 
@@ -341,16 +341,16 @@ def follow_up_task(job: dict[str, Any], config: dict[str, Any]) -> None:
     jobs.update(
         job["id"],
         status="duplicate" if duplicate else "failed",
-        error=state["message"] or "Paperless hat das Dokument abgelehnt.",
+        error=state["message"] or "Paperless rejected the document.",
         confirmed_at=datetime.now().isoformat(timespec="seconds"),
     )
     logs.publish(
-        f"Paperless hat {job['name']} " + ("als Duplikat abgelehnt." if duplicate else f"abgelehnt: {state['message']}"),
+        f"Paperless rejected {job['name']} " + ("as a duplicate." if duplicate else f": {state['message']}"),
         "warning" if duplicate else "error",
     )
     push_service.notify(
-        "Duplikat" if duplicate else "Upload abgelehnt",
-        f"{job['name']}: " + ("Paperless kennt das Dokument bereits." if duplicate else state["message"]),
+        "Duplicate" if duplicate else "Upload rejected",
+        f"{job['name']}: " + ("Paperless already has this document." if duplicate else state["message"]),
     )
     publish_mqtt_state()
 
@@ -375,11 +375,11 @@ def cleanup_uploaded(config: dict[str, Any]) -> None:
             existed = path.exists()
             path.unlink(missing_ok=True)
         except OSError as error:
-            logs.publish(f"{path.name} konnte nicht gelöscht werden: {error}", "warning")
+            logs.publish(f"{path.name} could not be deleted: {error}", "warning")
             continue
         jobs.update(job["id"], file_deleted=True)
         if existed:
-            logs.publish(f"Lokale Kopie aufgeräumt: {job['name']}")
+            logs.publish(f"Local copy cleaned up: {job['name']}")
 
 
 def queue_worker() -> None:
@@ -395,7 +395,7 @@ def queue_worker() -> None:
                         follow_up_task(job, config)
             cleanup_uploaded(config)
         except Exception as error:  # the worker must never die
-            print(f"ScanDeck: Warteschlange: {error}", file=sys.stderr, flush=True)
+            print(f"ScanDeck: Queue error: {error}", file=sys.stderr, flush=True)
         time.sleep(15)
 
 
@@ -407,14 +407,14 @@ def finish_batch(config: dict[str, Any], session_tags: list[str]) -> Path:
     """Merge, store and (optionally) upload the collected pages as one document."""
     pages = batch.pages()
     if not pages:
-        raise RuntimeError("Der Stapel enthält keine Seiten.")
+        raise RuntimeError("The batch contains no pages.")
 
     logs.progress("merge", 30)
-    logs.publish(f"Füge {len(pages)} Seite(n) zu einem PDF zusammen …")
+    logs.publish(f"Merging {len(pages)} page(s) into one PDF …")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    target = Path(config["output_dir"]) / f"scan_{timestamp}_{len(pages)}-seiten.pdf"
+    target = Path(config["output_dir"]) / f"scan_{timestamp}_{len(pages)}-pages.pdf"
     count = batch.merge_into(target)
-    logs.publish(f"Dokument erstellt: {target.name} ({count} Seiten)", "success")
+    logs.publish(f"Document created: {target.name} ({count} pages)", "success")
 
     remember_result(target, "pdf")
 
@@ -424,7 +424,7 @@ def finish_batch(config: dict[str, Any], session_tags: list[str]) -> Path:
     if config["upload_to_paperless"]:
         logs.progress("upload", 80)
     else:
-        logs.publish("Upload nach Paperless-ngx ist deaktiviert.", "warning")
+        logs.publish("Upload to Paperless-ngx is disabled.", "warning")
     queue_upload(target, upload_config, count, upload_config["default_tags"])
 
     batch.clear()
@@ -481,7 +481,7 @@ def scan_config(session_tags: list[str], overrides: dict[str, Any]) -> dict[str,
 def scan_worker(session_tags: list[str], trigger: str, overrides: dict[str, Any]) -> None:
     try:
         config = scan_config(session_tags, overrides)
-        logs.publish(f"Scan angefordert ({'Home Assistant' if trigger == 'ha' else 'Oberfläche'}).")
+        logs.publish(f"Scan requested ({'Home Assistant' if trigger == 'ha' else 'interface'}).")
         logs.progress("start", 4)
         if config["upload_to_paperless"]:
             PaperlessClient(config, logs).require_config()
@@ -495,13 +495,13 @@ def scan_worker(session_tags: list[str], trigger: str, overrides: dict[str, Any]
         if batch.active():
             # Collect the sheets; nothing is uploaded until the batch is closed.
             index, total, replaced, added = batch.add(sheets)
-            action = (f"Seite {index + 1} ersetzt" if replaced and added == 1
-                      else f"Seite {index + 1} durch {added} Seiten ersetzt" if replaced
-                      else f"{added} Seiten aufgenommen" if added > 1
-                      else f"Seite {total} aufgenommen")
-            logs.publish(f"{action} · {total} Seite(n) im Stapel.", "success")
+            action = (f"Page {index + 1} replaced" if replaced and added == 1
+                      else f"Page {index + 1} replaced by {added} pages" if replaced
+                      else f"{added} pages added" if added > 1
+                      else f"Page {total} added")
+            logs.publish(f"{action} · {total} page(s) in batch.", "success")
             logs.progress("done", 100, batch=True, pages=total, page_index=index, added=added)
-            notify_home_assistant(config, "page", f"Seite {index + 1}", None)
+            notify_home_assistant(config, "page", f"Page {index + 1}", None)
             return
 
         target, count = collect_document(sheets, config)
@@ -509,22 +509,22 @@ def scan_worker(session_tags: list[str], trigger: str, overrides: dict[str, Any]
         if config["upload_to_paperless"]:
             logs.progress("upload", 88)
         else:
-            logs.publish("Upload nach Paperless-ngx ist deaktiviert.", "warning")
+            logs.publish("Upload to Paperless-ngx is disabled.", "warning")
         queue_upload(target, config, count, config["default_tags"])
         logs.progress("done", 100, file=target.name, pages=count)
-        logs.publish("Workflow abgeschlossen.", "success")
+        logs.publish("Workflow completed.", "success")
         notify_home_assistant(config, "success", target.name, None)
         if not config["upload_to_paperless"]:
-            push_service.notify("Scan fertig", f"{target.name} liegt im Ablageordner.")
+            push_service.notify("Scan complete", f"{target.name} saved to scans folder.")
     except ScanCancelled:
         # Stopping on purpose is not a failure, so it is not reported as one.
         scan_state["last_error"] = None
         logs.progress("cancelled", 100)
-        logs.publish("Scan abgebrochen.", "warning")
+        logs.publish("Scan cancelled.", "warning")
     except Exception as error:  # surface every device/API failure in the log stream
         scan_state["last_error"] = str(error)
         logs.progress("error", 100, error=str(error))
-        logs.publish(f"Workflow fehlgeschlagen: {error}", "error")
+        logs.publish(f"Workflow failed: {error}", "error")
         notify_home_assistant(store.get(), "error", None, str(error))
     finally:
         set_active_scan(None)
@@ -544,19 +544,19 @@ def tidy_sheets(sheets: list[Path], config: dict[str, Any]) -> list[Path]:
     kept: list[Path] = []
     for sheet in sheets:
         if config.get("skip_blank_pages") and looks_blank(sheet):
-            logs.publish(f"{sheet.name} ist leer und wird übersprungen.")
+            logs.publish(f"{sheet.name} is blank and was skipped.")
             sheet.unlink(missing_ok=True)
             continue
         if config.get("deskew_enabled"):
             angle = straighten(sheet, int(config.get("resolution", 300)))
             if angle:
-                logs.publish(f"{sheet.name} war {angle:+.1f}° schief und wurde geradegerückt.")
+                logs.publish(f"{sheet.name} was {angle:+.1f}° crooked and was straightened.")
         kept.append(sheet)
 
     if not kept:
         # Every sheet blank is a real outcome, not a failure — but the run has
         # produced nothing, so say so instead of writing an empty document.
-        raise RuntimeError("Alle Seiten waren leer. Es wurde nichts abgelegt.")
+        raise RuntimeError("All pages were blank. Nothing was saved.")
     return kept
 
 
@@ -566,11 +566,11 @@ def collect_document(sheets: list[Path], config: dict[str, Any]) -> tuple[Path, 
         return sheets[0], page_count(sheets[0])
 
     logs.progress("merge", 84)
-    logs.publish(f"Füge {len(sheets)} Blatt zu einem PDF zusammen …")
+    logs.publish(f"Merging {len(sheets)} sheets into one PDF …")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    target = Path(config["output_dir"]) / f"scan_{timestamp}_{len(sheets)}-seiten.pdf"
+    target = Path(config["output_dir"]) / f"scan_{timestamp}_{len(sheets)}-pages.pdf"
     count = merge_files(sheets, target)
-    logs.publish(f"Dokument erstellt: {target.name} ({count} Seiten)", "success")
+    logs.publish(f"Document created: {target.name} ({count} pages)", "success")
     return target, count
 
 
@@ -593,9 +593,9 @@ def notify_home_assistant(config: dict[str, Any], status: str, filename: str | N
                 },
                 timeout=10,
             )
-            logs.publish("Home Assistant benachrichtigt.", "info")
+            logs.publish("Home Assistant notified.", "info")
         except requests.RequestException as request_error:
-            logs.publish(f"Home-Assistant-Webhook fehlgeschlagen: {request_error}", "warning")
+            logs.publish(f"Home Assistant webhook failed: {request_error}", "warning")
 
     threading.Thread(target=send, daemon=True).start()
 
@@ -606,12 +606,12 @@ def batch_finish_worker(session_tags: list[str], metadata: dict[str, Any] | None
         config.update(metadata or {})
         target = finish_batch(config, session_tags)
         logs.progress("done", 100, file=target.name)
-        logs.publish("Stapel abgeschlossen.", "success")
+        logs.publish("Batch completed.", "success")
         notify_home_assistant(config, "success", target.name, None)
     except Exception as error:
         scan_state["last_error"] = str(error)
         logs.progress("error", 100, error=str(error))
-        logs.publish(f"Stapel fehlgeschlagen: {error}", "error")
+        logs.publish(f"Batch failed: {error}", "error")
         notify_home_assistant(store.get(), "error", None, str(error))
     finally:
         scan_state["running"] = False
@@ -627,9 +627,9 @@ def start_batch_finish(
     cannot merge the same pages twice.
     """
     if not batch.count():
-        return "Der Stapel enthält keine Seiten.", 400
+        return "The batch contains no pages.", 400
     if not scan_lock.acquire(blocking=False):
-        return "Ein Scan läuft gerade.", 409
+        return "A scan is currently running.", 409
     scan_state.update({"running": True, "last_error": None, "stage": "merge",
                        "progress": 10, "trigger": trigger})
     try:
@@ -650,7 +650,7 @@ def preview_response(path: Path, rotation: int = 0) -> Response:
     try:
         payload, mimetype = render_preview(path, rotation)
     except Exception as error:  # missing wheel or broken PDF: fall back to the file
-        logs.publish(f"Vorschau nicht gerendert ({error}); zeige Originaldatei.", "warning")
+        logs.publish(f"Preview not rendered ({error}); showing original file.", "warning")
         return send_file(path, mimetype="application/pdf", max_age=0)
     return Response(payload, mimetype=mimetype, headers={"Cache-Control": "no-store"})
 
@@ -663,9 +663,9 @@ def scan_file_response(path: Path) -> Response:
 def storage_error(error: OSError, target: Path) -> tuple[Response, int]:
     """Turn a bare PermissionError into something a user can act on."""
     message = (
-        f"{target} ist nicht beschreibbar ({error.strerror or error}). "
-        "Der Ordner gehoert vermutlich einem anderen Benutzer als dem Dienst — "
-        "Container neu starten oder PUID/PGID passend zum Host setzen."
+        f"{target} is not writable ({error.strerror or error}). "
+        "The directory probably belongs to a different user than the service — "
+        "restart container or set PUID/PGID matching the host."
     )
     logs.publish(message, "error")
     return jsonify({"error": message}), 500
@@ -723,9 +723,9 @@ def put_config() -> Response:
         config = store.save(request.get_json(force=True) or {})
         # A freshly chosen folder is created and probed now, so a wrong path is
         # reported here instead of failing halfway through the next scan.
-        check_writable(Path(config["output_dir"]), "Scan-Ablage")
+        check_writable(Path(config["output_dir"]), "Scan storage")
         mqtt_bridge.apply(store.get())
-        logs.publish("Einstellungen gespeichert.", "success")
+        logs.publish("Settings saved.", "success")
         return jsonify(config)
     except (TypeError, ValueError) as error:
         return jsonify({"error": str(error)}), 400
@@ -740,7 +740,7 @@ def complete_setup() -> Response:
         if payload:
             store.save(payload)
         config = store.patch(setup_complete=True)
-        logs.publish("Einrichtung abgeschlossen.", "success")
+        logs.publish("Setup completed.", "success")
         return jsonify(config)
     except (TypeError, ValueError) as error:
         return jsonify({"error": str(error)}), 400
@@ -755,7 +755,7 @@ def reset_setup() -> Response:
         public_config = store.reset()
     except OSError as error:
         return jsonify({"error": str(error)}), 500
-    logs.publish("Konfiguration zurückgesetzt.", "warning")
+    logs.publish("Configuration reset.", "warning")
     return jsonify(public_config)
 
 
@@ -776,16 +776,16 @@ def state() -> Response:
 def feeder_hint(adf_state: str) -> str:
     """Plain words for what the sheet feeder currently reports."""
     if adf_state in ADF_READY:
-        return "bestückt, bereit zum Scannen."
+        return "loaded, ready to scan."
     if adf_state == ADF_EMPTY:
-        return ("leer. Liegt Papier ein und es bleibt bei „leer“, hat dieses Gerät "
-                "vermutlich gar keinen Einzug — dann bitte das Flachbett nutzen.")
+        return ("empty. If paper is loaded and it remains 'empty', this device "
+                "probably has no feeder — please use the flatbed instead.")
     if adf_state:
         return ADF_LABELS.get(adf_state, adf_state)
-    return "wird von diesem Gerät nicht gemeldet."
+    return "not reported by this device."
 
 
-SOURCE_LABELS = {"Platen": "Vorlagenglas", "Feeder": "Einzug"}
+SOURCE_LABELS = {"Platen": "Flatbed", "Feeder": "Feeder"}
 
 
 def capability_summary(capabilities: dict[str, Any]) -> dict[str, Any]:
@@ -828,13 +828,13 @@ def test_scanner() -> Response:
             status = client.full_status()
             result["adf_state"] = status["adf"]
             if "Feeder" in result["sources"]:
-                logs.publish(f"Einzug: {feeder_hint(status['adf'])}",
+                logs.publish(f"Feeder: {feeder_hint(status['adf'])}",
                              "success" if status["adf"] in ADF_READY else "warning")
         except (requests.RequestException, ET.ParseError):
             result["adf_state"] = ""
         return jsonify({"ok": True, **capability_summary(result)})
     except (requests.RequestException, ET.ParseError, RuntimeError) as error:
-        logs.publish(f"Scanner-Test fehlgeschlagen: {error}", "error")
+        logs.publish(f"Scanner test failed: {error}", "error")
         return jsonify({"ok": False, "error": str(error)}), 502
 
 
@@ -869,7 +869,7 @@ def test_paperless() -> Response:
         PaperlessClient(store.get(), logs).test()
         return jsonify({"ok": True})
     except (requests.RequestException, RuntimeError) as error:
-        logs.publish(f"Paperless-Test fehlgeschlagen: {error}", "error")
+        logs.publish(f"Paperless test failed: {error}", "error")
         return jsonify({"ok": False, "error": str(error)}), 502
 
 
@@ -888,10 +888,10 @@ def discover_scanners() -> Response:
 
         devices, found_in = autodiscover_scanners(config, logs, request.remote_addr)
         if not devices:
-            logs.publish("Kein Scanner gefunden. Netzwerk bitte manuell angeben.", "warning")
+            logs.publish("No scanner found. Please specify the network subnet manually.", "warning")
         return jsonify({"ok": True, "devices": devices, "subnet": found_in, "auto": True})
     except (ValueError, requests.RequestException) as error:
-        logs.publish(f"Scanner-Suche fehlgeschlagen: {error}", "error")
+        logs.publish(f"Scanner discovery failed: {error}", "error")
         return jsonify({"ok": False, "error": str(error)}), 400
 
 
@@ -915,7 +915,7 @@ def mqtt_test() -> Response:
         time.sleep(0.25)
     if not config.get("mqtt_enabled"):
         return jsonify({"ok": True, "connected": False, "disabled": True})
-    return jsonify({"ok": False, "error": "Keine Verbindung zum Broker."}), 502
+    return jsonify({"ok": False, "error": "No connection to MQTT broker."}), 502
 
 
 @app.get("/api/push/key")
@@ -944,14 +944,14 @@ def push_enable() -> Response:
     except OSError as error:
         return storage_error(error, CONFIG_PATH)
     except Exception as error:
-        return jsonify({"ok": False, "error": f"Schlüssel konnten nicht erzeugt werden: {error}"}), 500
+        return jsonify({"ok": False, "error": f"Failed to generate keys: {error}"}), 500
     return jsonify({"ok": True, "public_key": store.get()["push_public_key"]})
 
 
 @app.post("/api/push/disable")
 def push_disable() -> Response:
     store.patch(push_enabled=False, push_subscriptions=[])
-    logs.publish("Benachrichtigungen abgeschaltet.", "warning")
+    logs.publish("Notifications disabled.", "warning")
     return jsonify({"ok": True})
 
 
@@ -974,8 +974,8 @@ def push_unsubscribe() -> Response:
 def push_test() -> Response:
     config = store.get()
     if not config.get("push_enabled") or not (config.get("push_subscriptions") or []):
-        return jsonify({"ok": False, "error": "Noch kein Gerät angemeldet."}), 400
-    push_service.notify("ScanDeck", "Benachrichtigungen funktionieren.", tag="test")
+        return jsonify({"ok": False, "error": "No device registered yet."}), 400
+    push_service.notify("ScanDeck", "Notifications are working.", tag="test")
     return jsonify({"ok": True})
 
 
@@ -1033,11 +1033,11 @@ def profile_scan(profile_id: str, trigger: str) -> tuple[Response, int]:
     """Start a scan the way a saved profile describes it."""
     profile = profile_by_id(profile_id)
     if not profile:
-        return jsonify({"ok": False, "error": "Unbekanntes Profil."}), 404
+        return jsonify({"ok": False, "error": "Unknown profile."}), 404
     overrides = {key: profile[key] for key in SCAN_OVERRIDES if key in profile}
-    logs.publish(f"Profil „{profile['name']}“ gestartet.")
+    logs.publish(f"Profile '{profile['name']}' started.")
     if not start_scan_job(profile.get("tags", []), trigger, overrides):
-        return jsonify({"ok": False, "error": "Ein Scan läuft bereits."}), 409
+        return jsonify({"ok": False, "error": "A scan is already running."}), 409
     return jsonify({"ok": True, "profile": profile["name"]}), 202
 
 
@@ -1052,7 +1052,7 @@ def put_profiles() -> Response:
     try:
         payload = request.get_json(force=True) or {}
         config = store.patch(profiles=payload.get("profiles", []))
-        logs.publish("Profile gespeichert.", "success")
+        logs.publish("Profiles saved.", "success")
         return jsonify({"profiles": config.get("profiles", [])})
     except (TypeError, ValueError) as error:
         return jsonify({"error": str(error)}), 400
@@ -1070,16 +1070,16 @@ def start_scan() -> Response:
     payload = request.get_json(silent=True) or {}
     session_tags = parse_session_tags(payload.get("session_tags"))
     if not start_scan_job(session_tags, "ui", payload.get("overrides")):
-        return jsonify({"error": "Ein Scan läuft bereits."}), 409
-    return jsonify({"ok": True, "message": "Scan wurde gestartet."}), 202
+        return jsonify({"error": "A scan is already running."}), 409
+    return jsonify({"ok": True, "message": "Scan started."}), 202
 
 
 @app.post("/api/scan/cancel")
 def cancel_scan() -> Response:
     """Stop the running scan. Sheets already pulled in are kept."""
     if not scan_state["running"] or not cancel_active_scan():
-        return jsonify({"ok": False, "error": "Es läuft gerade kein Scan."}), 409
-    logs.publish("Abbruch angefordert …", "warning")
+        return jsonify({"ok": False, "error": "No scan currently running."}), 409
+    logs.publish("Cancellation requested …", "warning")
     return jsonify({"ok": True}), 202
 
 
@@ -1091,7 +1091,7 @@ def get_batch() -> Response:
 @app.post("/api/batch/start")
 def start_batch() -> Response:
     public_batch = batch.begin()
-    logs.publish("Stapel gestartet — Seiten werden gesammelt.", "success")
+    logs.publish("Batch started — collecting pages.", "success")
     return jsonify(public_batch)
 
 
@@ -1099,7 +1099,7 @@ def start_batch() -> Response:
 def cancel_batch() -> Response:
     pages = batch.count()
     batch.clear()
-    logs.publish(f"Stapel verworfen ({pages} Seite(n)).", "warning")
+    logs.publish(f"Batch discarded ({pages} page(s)).", "warning")
     return jsonify(batch.public())
 
 
@@ -1108,17 +1108,17 @@ def arm_replace() -> Response:
     """Arm the next scan to overwrite one page instead of appending."""
     index = (request.get_json(silent=True) or {}).get("index")
     if not batch.arm(index):
-        return jsonify({"error": "Diese Seite gibt es nicht."}), 400
+        return jsonify({"error": "Page does not exist."}), 400
     if index is not None:
-        logs.publish(f"Nächster Scan ersetzt Seite {int(index) + 1}.")
+        logs.publish(f"Next scan replaces page {int(index) + 1}.")
     return jsonify(batch.public())
 
 
 @app.delete("/api/batch/page/<int:index>")
 def delete_batch_page(index: int) -> Response:
     if not batch.remove(index):
-        return jsonify({"error": "Diese Seite gibt es nicht."}), 404
-    logs.publish(f"Seite {index + 1} aus dem Stapel entfernt.")
+        return jsonify({"error": "Page does not exist."}), 404
+    logs.publish(f"Page {index + 1} removed from batch.")
     return jsonify(batch.public())
 
 
@@ -1126,10 +1126,10 @@ def delete_batch_page(index: int) -> Response:
 def batch_page_preview(index: int) -> Response:
     page = batch.page(index)
     if not page:
-        return jsonify({"error": "Diese Seite gibt es nicht."}), 404
+        return jsonify({"error": "Page does not exist."}), 404
     path = Path(page["path"])
     if not path.exists():
-        return jsonify({"error": "Seite nicht mehr vorhanden."}), 404
+        return jsonify({"error": "Page no longer exists."}), 404
     return preview_response(path, page.get("rotation", 0))
 
 
@@ -1138,7 +1138,7 @@ def rotate_batch_page(index: int) -> Response:
     """Turn a single page; the rotation is applied when the batch is merged."""
     degrees = normalise_rotation((request.get_json(silent=True) or {}).get("degrees", 90)) or 90
     if not batch.rotate(index, degrees):
-        return jsonify({"error": "Diese Seite gibt es nicht."}), 404
+        return jsonify({"error": "Page does not exist."}), 404
     return jsonify(batch.public())
 
 
@@ -1147,7 +1147,7 @@ def rotate_whole_batch() -> Response:
     """Turn every collected page — a feeder stack is rarely wrong page by page."""
     degrees = normalise_rotation((request.get_json(silent=True) or {}).get("degrees", 180)) or 180
     count = batch.rotate_all(degrees)
-    logs.publish(f"{count} Seite(n) um {degrees}° gedreht.")
+    logs.publish(f"Rotated {count} page(s) by {degrees}°.")
     return jsonify(batch.public())
 
 
@@ -1155,7 +1155,7 @@ def rotate_whole_batch() -> Response:
 def reverse_batch() -> Response:
     """Flip the page order, for feeders that deliver the last sheet first."""
     count = batch.reverse()
-    logs.publish(f"Reihenfolge umgekehrt ({count} Seiten).")
+    logs.publish(f"Reversed page order ({count} pages).")
     return jsonify(batch.public())
 
 
@@ -1164,8 +1164,8 @@ def reorder_batch() -> Response:
     """Apply a new page order, e.g. after dragging a page to another slot."""
     order = (request.get_json(silent=True) or {}).get("order")
     if not batch.reorder(order):
-        return jsonify({"error": "Die Reihenfolge passt nicht zum Stapel."}), 400
-    logs.publish("Reihenfolge im Stapel geändert.")
+        return jsonify({"error": "Order does not match batch."}), 400
+    logs.publish("Batch page order updated.")
     return jsonify(batch.public())
 
 
@@ -1190,7 +1190,7 @@ def preview() -> Response:
     """Rasterised view of the most recent scan for the post-scan preview."""
     last_file = scan_state.get("last_file")
     if not last_file or not Path(last_file).exists():
-        return jsonify({"error": "Keine Vorschau verfügbar."}), 404
+        return jsonify({"error": "No preview available."}), 404
     return preview_response(Path(last_file))
 
 
@@ -1198,7 +1198,7 @@ def preview() -> Response:
 def preview_file() -> Response:
     last_file = scan_state.get("last_file")
     if not last_file or not Path(last_file).exists():
-        return jsonify({"error": "Keine Datei verfügbar."}), 404
+        return jsonify({"error": "No file available."}), 404
     return scan_file_response(Path(last_file))
 
 
@@ -1216,10 +1216,10 @@ def get_history() -> Response:
 def history_preview(job_id: str) -> Response:
     job = jobs.get(job_id)
     if not job:
-        return jsonify({"error": "Unbekannter Eintrag."}), 404
+        return jsonify({"error": "Unknown entry."}), 404
     path = Path(job["path"])
     if not path.exists():
-        return jsonify({"error": "Datei wurde bereits aufgeräumt."}), 404
+        return jsonify({"error": "File was already cleaned up."}), 404
     return preview_response(path)
 
 
@@ -1227,7 +1227,7 @@ def history_preview(job_id: str) -> Response:
 def history_file(job_id: str) -> Response:
     job = jobs.get(job_id)
     if not job or not Path(job["path"]).exists():
-        return jsonify({"error": "Datei wurde bereits aufgeräumt."}), 404
+        return jsonify({"error": "File was already cleaned up."}), 404
     return scan_file_response(Path(job["path"]))
 
 
@@ -1236,9 +1236,9 @@ def history_retry(job_id: str) -> Response:
     """Send a document to Paperless again — after a failure or on purpose."""
     job = jobs.get(job_id)
     if not job:
-        return jsonify({"error": "Unbekannter Eintrag."}), 404
+        return jsonify({"error": "Unknown entry."}), 404
     if not Path(job["path"]).exists():
-        return jsonify({"error": "Die Datei wurde bereits aufgeräumt."}), 410
+        return jsonify({"error": "File was already cleaned up."}), 410
     jobs.update(job_id, status="pending", next_attempt=0, error=None, attempts=0)
     threading.Thread(target=attempt_upload, args=(job_id,), daemon=True).start()
     return jsonify({"ok": True}), 202
@@ -1248,7 +1248,7 @@ def history_retry(job_id: str) -> Response:
 def history_delete(job_id: str) -> Response:
     job = jobs.get(job_id)
     if not job:
-        return jsonify({"error": "Unbekannter Eintrag."}), 404
+        return jsonify({"error": "Unknown entry."}), 404
     # Remove the file first: dropping the entry on a failed unlink would leave
     # a scan on disk that nothing in the interface can reach any more.
     try:
@@ -1256,7 +1256,7 @@ def history_delete(job_id: str) -> Response:
     except OSError as error:
         return jsonify({"error": str(error)}), 500
     jobs.remove(job_id)
-    logs.publish(f"{job['name']} aus dem Verlauf gelöscht.")
+    logs.publish(f"{job['name']} deleted from history.")
     return jsonify({"ok": True})
 
 
@@ -1280,7 +1280,7 @@ def stream_logs() -> Response:
     except TooManySubscribers:
         # Better an honest refusal than a request that hangs forever because
         # every worker thread is parked on a stream.
-        return jsonify({"error": "Zu viele offene Verbindungen."}), 503
+        return jsonify({"error": "Too many open connections."}), 503
     return Response(
         stream_with_context(stream),
         mimetype="text/event-stream",
@@ -1326,15 +1326,15 @@ def auth_login() -> Response:
     if blocked:
         return jsonify({
             "ok": False,
-            "error": f"Zu viele Fehlversuche. Bitte {blocked // 60 + 1} Minuten warten.",
+            "error": f"Too many attempts. Please wait {blocked // 60 + 1} minute(s).",
             "retry_after": blocked,
         }), 429
 
     password = str((request.get_json(silent=True) or {}).get("password", ""))
     if not auth.verify_password(config.get("auth_password_hash", ""), password):
         login_throttle.record_failure()
-        logs.publish("Anmeldung mit falschem Passwort abgelehnt.", "warning")
-        return jsonify({"ok": False, "error": "Passwort stimmt nicht."}), 401
+        logs.publish("Login rejected: incorrect password.", "warning")
+        return jsonify({"ok": False, "error": "Incorrect password."}), 401
 
     login_throttle.reset()
     sign_in()
@@ -1360,7 +1360,7 @@ def auth_enable() -> Response:
     except OSError as error:
         return storage_error(error, CONFIG_PATH)
     sign_in()
-    logs.publish("Zugriffsschutz eingeschaltet.", "success")
+    logs.publish("Access protection enabled.", "success")
     return jsonify({"ok": True, **auth.public_state(store.get(), True)})
 
 
@@ -1372,7 +1372,7 @@ def auth_change_password() -> Response:
     if config.get("auth_enabled") and not auth.verify_password(
         config.get("auth_password_hash", ""), str(payload.get("current", ""))
     ):
-        return jsonify({"ok": False, "error": "Bisheriges Passwort stimmt nicht."}), 401
+        return jsonify({"ok": False, "error": "Current password is incorrect."}), 401
     try:
         password = auth.check_password_rules(payload.get("password", ""))
     except ValueError as error:
@@ -1382,7 +1382,7 @@ def auth_change_password() -> Response:
     except OSError as error:
         return storage_error(error, CONFIG_PATH)
     sign_in()  # every other browser is signed out by the changed password
-    logs.publish("Passwort für den Zugriffsschutz geändert.", "success")
+    logs.publish("Password changed.", "success")
     return jsonify({"ok": True, **auth.public_state(store.get(), True)})
 
 
@@ -1394,7 +1394,7 @@ def auth_disable() -> Response:
         return storage_error(error, CONFIG_PATH)
     session.pop("auth", None)
     login_throttle.reset()
-    logs.publish("Zugriffsschutz ausgeschaltet.", "warning")
+    logs.publish("Access protection disabled.", "warning")
     return jsonify({"ok": True, **auth.public_state(store.get(), True)})
 
 
@@ -1411,7 +1411,7 @@ def require_api_key(view: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         config = store.get()
         if not config.get("ha_enabled"):
-            return jsonify({"error": "Home-Assistant-Schnittstelle ist deaktiviert."}), 403
+            return jsonify({"error": "Home Assistant interface is disabled."}), 403
         expected = config.get("ha_api_key", "")
         provided = (
             request.headers.get("X-API-Key")
@@ -1419,7 +1419,7 @@ def require_api_key(view: Callable[..., Any]) -> Callable[..., Any]:
             or (request.headers.get("Authorization", "").removeprefix("Bearer ").strip())
         )
         if not expected or not provided or not secrets.compare_digest(str(provided), str(expected)):
-            return jsonify({"error": "Ungültiger API-Key."}), 401
+            return jsonify({"error": "Invalid API key."}), 401
         return view(*args, **kwargs)
 
     return wrapper
@@ -1430,7 +1430,7 @@ def rotate_ha_key() -> Response:
     """Generate a fresh API key for Home Assistant and return it once."""
     key = secrets.token_urlsafe(32)
     store.patch(ha_api_key=key, ha_enabled=True)
-    logs.publish("Neuer Home-Assistant-API-Key erzeugt.", "success")
+    logs.publish("New Home Assistant API key generated.", "success")
     return jsonify({"ok": True, "api_key": key})
 
 
@@ -1450,8 +1450,8 @@ def ha_scan() -> Response:
     session_tags = parse_session_tags(payload.get("tags") or payload.get("session_tags"))
     overrides = {key: payload[key] for key in SCAN_OVERRIDES if key in payload}
     if not start_scan_job(session_tags, "ha", overrides):
-        return jsonify({"ok": False, "error": "Ein Scan läuft bereits."}), 409
-    return jsonify({"ok": True, "message": "Scan gestartet."}), 202
+        return jsonify({"ok": False, "error": "A scan is already running."}), 409
+    return jsonify({"ok": True, "message": "Scan started."}), 202
 
 
 @app.get("/api/ha/state")
@@ -1484,26 +1484,26 @@ def ha_batch() -> Response:
     action = str((request.get_json(silent=True) or {}).get("action", "")).lower()
     if action == "start":
         public_batch = batch.begin()
-        logs.publish("Stapel über Home Assistant gestartet.", "success")
+        logs.publish("Batch started via Home Assistant.", "success")
         return jsonify({"ok": True, **public_batch})
     if action == "cancel":
         batch.clear()
-        logs.publish("Stapel über Home Assistant verworfen.", "warning")
+        logs.publish("Batch discarded via Home Assistant.", "warning")
         return jsonify({"ok": True, **batch.public()})
     if action == "finish":
         refused = start_batch_finish([], {}, "ha")
         if refused:
             message, status = refused
             return jsonify({"ok": False, "error": message}), status
-        return jsonify({"ok": True, "message": "Stapel wird abgeschlossen."}), 202
-    return jsonify({"ok": False, "error": "action muss start, finish oder cancel sein."}), 400
+        return jsonify({"ok": True, "message": "Batch finishing."}), 202
+    return jsonify({"ok": False, "error": "action must be start, finish or cancel."}), 400
 
 
 @app.post("/api/ha/test")
 @require_api_key
 def ha_test() -> Response:
-    logs.publish("Home Assistant hat die Verbindung getestet.", "success")
-    return jsonify({"ok": True, "message": "Verbindung steht."})
+    logs.publish("Home Assistant connection test successful.", "success")
+    return jsonify({"ok": True, "message": "Connection established."})
 
 
 # Erst starten, wenn alle Funktionen definiert sind.

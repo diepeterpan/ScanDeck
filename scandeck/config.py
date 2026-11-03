@@ -47,8 +47,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "cleanup_hours": 24,
     "prewarm_enabled": True,
     "sound_enabled": False,
-    # Nachbearbeitung: beide aus, weil sie Seiten verändern beziehungsweise
-    # verwerfen — das soll niemand ungefragt bekommen.
+    # Post-processing: both off by default to avoid altering or dropping pages unexpectedly.
     "skip_blank_pages": False,
     "deskew_enabled": False,
     "profiles": [],
@@ -56,19 +55,19 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "ha_enabled": False,
     "ha_api_key": "",
     "ha_webhook_url": "",
-    # MQTT: Home Assistant legt die Geraete selbst an, sobald ein Broker steht.
+    # MQTT: Home Assistant discovers devices once a broker is configured.
     "mqtt_enabled": False,
     "mqtt_host": "",
     "mqtt_port": 1883,
     "mqtt_user": "",
     "mqtt_password": "",
     "mqtt_device_name": "ScanDeck",
-    # Push aufs Handy, wenn ein Scan fertig ist.
+    # Push notification to phone when scan completes.
     "push_enabled": False,
     "push_public_key": "",
     "push_private_key": "",
     "push_subscriptions": [],
-    # Zugriffsschutz ist Opt-in; das Passwort liegt nur als Hash hier.
+    # Access control is opt-in; password stored as a hash only.
     "auth_enabled": False,
     "auth_password_hash": "",
     "session_secret": "",
@@ -87,9 +86,9 @@ PROTECTED_KEYS = ("auth_enabled", "auth_password_hash", "session_secret")
 
 ALLOWED_SOURCES = {"Platen", "Feeder"}
 ALLOWED_RESOLUTIONS = {75, 100, 150, 200, 300, 600, 1200}
-# Schwarzweiß (1 bit) bringt für Belege nichts, was Graustufen nicht besser
-# können: Text franst aus und Paperless erkennt ihn schlechter. Bestehende
-# Konfigurationen werden still auf Graustufen gehoben statt abgelehnt.
+# Black and white (1-bit) brings no benefit over greyscale for receipts:
+# text frays and Paperless OCR performs worse. Existing configurations are
+# silently upgraded to greyscale instead of rejected.
 ALLOWED_COLOR_MODES = {"RGB24", "Grayscale8"}
 RETIRED_COLOR_MODES = {"BlackAndWhite1": "Grayscale8"}
 ALLOWED_FORMATS = {"image/jpeg", "application/pdf"}
@@ -115,9 +114,9 @@ def default_config() -> dict[str, Any]:
 def normalise_url(value: str, field_name: str, required: bool = False) -> str:
     value = str(value or "").strip().rstrip("/")
     if not value and required:
-        raise ValueError(f"{field_name} darf nicht leer sein.")
+        raise ValueError(f"{field_name} cannot be empty.")
     if value and not re.match(r"^https?://", value, re.IGNORECASE):
-        raise ValueError(f"{field_name} muss mit http:// oder https:// beginnen.")
+        raise ValueError(f"{field_name} must begin with http:// or https://.")
     return value
 
 
@@ -158,15 +157,15 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
     config["preview_seconds"] = max(0, min(60, int(config.get("preview_seconds", 10))))
 
     if config["source"] not in ALLOWED_SOURCES:
-        raise ValueError("Unbekannte Scanquelle.")
+        raise ValueError("Unknown scan source.")
     if config["resolution"] not in ALLOWED_RESOLUTIONS:
-        raise ValueError("Nicht unterstützte Auflösung.")
+        raise ValueError("Unsupported resolution.")
     if config["color_mode"] not in ALLOWED_COLOR_MODES:
-        raise ValueError("Nicht unterstützter Farbmodus.")
+        raise ValueError("Unsupported color mode.")
     if config["output_format"] not in ALLOWED_FORMATS:
-        raise ValueError("Nicht unterstütztes Ausgabeformat.")
+        raise ValueError("Unsupported output format.")
     if config["paper_size"] not in PAPER_SIZES:
-        raise ValueError("Unbekanntes Papierformat.")
+        raise ValueError("Unknown paper size.")
     # Duplex is a property of the sheet feeder; on the flatbed it means nothing.
     if config["source"] != "Feeder":
         config["duplex"] = False
@@ -175,18 +174,18 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
         try:
             discovery_network = ip_network(config["discovery_subnet"], strict=False)
         except ValueError as error:
-            raise ValueError("Netzwerk für die Scanner-Suche ist ungültig.") from error
+            raise ValueError("Scanner discovery network is invalid.") from error
         if (
             not isinstance(discovery_network, IPv4Network)
             or not discovery_network.is_private
             or discovery_network.num_addresses > 256
         ):
-            raise ValueError("Die Scanner-Suche akzeptiert nur private IPv4-Netze bis /24.")
+            raise ValueError("Scanner discovery only accepts private IPv4 subnets up to /24.")
         config["discovery_subnet"] = str(discovery_network)
 
     output_dir = Path(str(config.get("output_dir") or DEFAULT_OUTPUT_DIR)).expanduser()
     if not output_dir.is_absolute():
-        raise ValueError("Scan-Ausgabeverzeichnis muss ein absoluter Pfad im Container sein.")
+        raise ValueError("Scan output directory must be an absolute path inside the container.")
     config["output_dir"] = str(output_dir)
 
     config["skip_blank_pages"] = bool(config.get("skip_blank_pages"))
@@ -206,13 +205,13 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
     config["push_private_key"] = str(config.get("push_private_key", "")).strip()
     subscriptions = config.get("push_subscriptions", [])
     if not isinstance(subscriptions, list):
-        raise ValueError("Push-Abonnements müssen eine Liste sein.")
+        raise ValueError("Push subscriptions must be a list.")
     config["push_subscriptions"] = [entry for entry in subscriptions
                                     if isinstance(entry, dict) and entry.get("endpoint")][:20]
 
     tags = config.get("default_tags", [])
     if not isinstance(tags, list):
-        raise ValueError("Standard-Tags müssen eine Liste sein.")
+        raise ValueError("Default tags must be a list.")
     config["default_tags"] = list(dict.fromkeys(str(tag).strip() for tag in tags if str(tag).strip()))
     config["profiles"] = validate_profiles(config.get("profiles", []))
     return config
@@ -227,14 +226,14 @@ MAX_PROFILES = 12
 def validate_profiles(profiles: Any) -> list[dict[str, Any]]:
     """One-tap presets: a name, a few scan settings, optional tags."""
     if not isinstance(profiles, list):
-        raise ValueError("Profile müssen eine Liste sein.")
+        raise ValueError("Profiles must be a list.")
     cleaned: list[dict[str, Any]] = []
     for entry in profiles[:MAX_PROFILES]:
         if not isinstance(entry, dict):
-            raise ValueError("Jedes Profil muss ein Objekt sein.")
+            raise ValueError("Each profile must be an object.")
         name = str(entry.get("name", "")).strip()
         if not name:
-            raise ValueError("Jedes Profil braucht einen Namen.")
+            raise ValueError("Each profile needs a name.")
         profile: dict[str, Any] = {"name": name[:40], "id": str(entry.get("id") or name.lower())[:60]}
         settings = {key: entry[key] for key in PROFILE_FIELDS if entry.get(key) not in (None, "")}
         # Validated against the same rules as the stored settings, so a profile
@@ -243,7 +242,7 @@ def validate_profiles(profiles: Any) -> list[dict[str, Any]]:
         profile.update({key: checked[key] for key in settings})
         tags = entry.get("tags", [])
         if not isinstance(tags, list):
-            raise ValueError("Profil-Tags müssen eine Liste sein.")
+            raise ValueError("Profile tags must be a list.")
         profile["tags"] = list(dict.fromkeys(str(tag).strip() for tag in tags if str(tag).strip()))
         # Only stored when the profile really wants to decide this. Otherwise
         # the global setting applies — a profile should not switch the upload on
@@ -252,7 +251,7 @@ def validate_profiles(profiles: Any) -> list[dict[str, Any]]:
             profile["upload_to_paperless"] = bool(entry["upload_to_paperless"])
         cleaned.append(profile)
     if len({profile["id"] for profile in cleaned}) != len(cleaned):
-        raise ValueError("Profilnamen müssen sich unterscheiden.")
+        raise ValueError("Profile names must be distinct.")
     return cleaned
 
 

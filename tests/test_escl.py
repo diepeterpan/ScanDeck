@@ -138,7 +138,7 @@ def test_the_feeder_returns_every_sheet(scanner):
 
 def test_an_empty_feeder_is_a_readable_error_not_a_crash(scanner):
     device, client = scanner(sheets=0, source="Feeder")
-    with pytest.raises(RuntimeError, match="keine Seite"):
+    with pytest.raises(RuntimeError, match="no page"):
         client.scan()
 
 
@@ -395,13 +395,13 @@ def test_capabilities_are_fetched_once_and_then_cached(deskjet):
 def test_a_rejected_job_says_what_is_wrong(deskjet):
     device, client = deskjet(source="Platen")
     message = client._rejection_reason(409)
-    assert "409" in message and "Papierformat" in message
+    assert "409" in message and "paper size" in message
     assert "A4" in message and "Legal" not in message  # names only what fits
 
 
 def test_an_empty_feeder_is_named_as_such(deskjet):
     device, client = deskjet(source="Feeder")
-    assert "Papier im Einzug" in client._rejection_reason(503)
+    assert "paper in the feeder" in client._rejection_reason(503)
 
 
 # --- the sheet feeder tray ------------------------------------------------- #
@@ -409,7 +409,7 @@ def test_an_empty_feeder_is_named_as_such(deskjet):
 def test_an_empty_tray_is_named_before_a_job_is_created(scanner):
     """The device answers an empty tray with a bare 409 that blames nothing."""
     device, client = scanner(sheets=3, source="Feeder", adf_state="ScannerAdfEmpty")
-    with pytest.raises(RuntimeError, match="Einzug ist leer"):
+    with pytest.raises(RuntimeError, match="Feeder is empty"):
         client.scan()
     # No job was created at all, so nothing has to be cleaned up on the device.
     assert device.settings_xml == ""
@@ -417,13 +417,13 @@ def test_an_empty_tray_is_named_before_a_job_is_created(scanner):
 
 def test_a_paper_jam_is_named(scanner):
     device, client = scanner(sheets=1, source="Feeder", adf_state="ScannerAdfJam")
-    with pytest.raises(RuntimeError, match="Papierstau im Einzug"):
+    with pytest.raises(RuntimeError, match="Paper jam in feeder"):
         client.scan()
 
 
 def test_a_device_without_a_feeder_says_so(scanner):
     device, client = scanner(sheets=1, source="Feeder", adf_state="")
-    with pytest.raises(RuntimeError, match="keinen Einzug"):
+    with pytest.raises(RuntimeError, match="no feeder"):
         client.scan()
 
 
@@ -446,8 +446,8 @@ def test_the_flatbed_never_asks_about_the_tray(scanner):
 def test_a_feeder_409_does_not_blame_the_paper_format(scanner):
     device, client = scanner(sheets=1, source="Feeder")
     message = client._rejection_reason(409)
-    assert "kein Papier" in message
-    assert "Papierformat" not in message  # that was the misleading part
+    assert "no paper" in message
+    assert "paper size" not in message  # that was the misleading part
 
 
 def test_the_status_reports_state_and_tray_together(scanner):

@@ -46,7 +46,7 @@ class JobStore:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             self.path.write_text(json.dumps(self._jobs, indent=2), encoding="utf-8")
         except OSError as error:
-            print(f"ScanDeck: Verlauf nicht gespeichert: {error}", file=sys.stderr, flush=True)
+            print(f"ScanDeck: History could not be saved: {error}", file=sys.stderr, flush=True)
 
     def add(self, file_path: Path, status: str, pages: int = 1, tags: list[str] | None = None) -> dict[str, Any]:
         job = {

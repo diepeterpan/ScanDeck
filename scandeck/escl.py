@@ -29,10 +29,10 @@ ADF_EMPTY = "ScannerAdfEmpty"
 ADF_JAM = "ScannerAdfJam"
 ADF_READY = ("ScannerAdfLoaded", "ScannerAdfProcessing")
 ADF_LABELS = {
-    ADF_EMPTY: "leer",
-    ADF_JAM: "Papierstau",
-    "ScannerAdfLoaded": "bestückt",
-    "ScannerAdfProcessing": "zieht ein",
+    ADF_EMPTY: "empty",
+    ADF_JAM: "paper jam",
+    "ScannerAdfLoaded": "loaded",
+    "ScannerAdfProcessing": "feeding",
 }
 
 # A sheet feeder that never reports "empty" must not scan forever.
@@ -122,7 +122,7 @@ class ScannerClient:
     def _stop_if_cancelled(self, pages: list[Path] | None = None) -> None:
         if self.cancel.is_set():
             self._discard(pages or [])
-            raise ScanCancelled("Scan abgebrochen.")
+            raise ScanCancelled("Scan cancelled.")
 
     @staticmethod
     def _discard(pages: list[Path]) -> None:
@@ -136,7 +136,7 @@ class ScannerClient:
     def base_url(self) -> str:
         url = self.config.get("scanner_url", "")
         if not url:
-            raise RuntimeError("Kein Scanner konfiguriert. Bitte im Einrichtungsassistenten hinterlegen.")
+            raise RuntimeError("No scanner configured. Please configure one in the setup wizard.")
         return url
 
     def _get(self, endpoint: str, timeout: int = 20) -> requests.Response:
@@ -148,16 +148,16 @@ class ScannerClient:
 
     def capabilities(self, quiet: bool = False) -> dict[str, Any]:
         if not quiet:
-            self.log.publish("Lese ScannerCapabilities …")
+            self.log.publish("Reading ScannerCapabilities …")
         response = self._get("ScannerCapabilities")
         response.raise_for_status()
         result = parse_capabilities(response.text)
         capability_cache.put(self.base_url, result)
         if not quiet:
-            extras = " · beidseitig" if result["duplex"] else ""
+            extras = " · duplex" if result["duplex"] else ""
             self.log.publish(
-                f"Scanner erreichbar · eSCL {result['version']} · "
-                f"Quellen: {', '.join(result['sources']) or 'unbekannt'}{extras}",
+                f"Scanner reachable · eSCL {result['version']} · "
+                f"Sources: {', '.join(result['sources']) or 'unknown'}{extras}",
                 "success",
             )
         return result
@@ -198,10 +198,10 @@ class ScannerClient:
         started = time.monotonic()
         self.log.progress("connect", 8)
         status = self.full_status()
-        self.log.publish(f"Scannerstatus: {status['state']}"
-                         + (f" · Einzug: {ADF_LABELS.get(status['adf'], status['adf'])}" if status["adf"] else ""))
+        self.log.publish(f"Scanner status: {status['state']}"
+                         + (f" · Feeder: {ADF_LABELS.get(status['adf'], status['adf'])}" if status["adf"] else ""))
         if status["state"] != "Idle":
-            raise RuntimeError(f"Scanner ist nicht bereit (Status: {status['state']}).")
+            raise RuntimeError(f"Scanner is not ready (state: {status['state']}).")
         if source == "Feeder":
             # Asked with an empty tray, this device answers the job with a bare
             # HTTP 409 that reads like a settings problem. Better to say plainly
@@ -217,7 +217,7 @@ class ScannerClient:
         timing_key = TimingStore.key(self.config)
         expected = self.timings.expected(timing_key) if self.timings else None
         if expected:
-            self.log.publish(f"Erwartete Dauer je Seite für dieses Profil: ~{expected:.0f}s")
+            self.log.publish(f"Expected duration per page for this profile: ~{expected:.0f}s")
 
         capture_started = time.monotonic()
         pages: list[Path] = []
@@ -234,23 +234,23 @@ class ScannerClient:
         self._stop_if_cancelled(pages)
 
         if not pages:
-            raise RuntimeError("Der Scanner hat kein Dokument geliefert.")
+            raise RuntimeError("The scanner delivered no document.")
         if self.timings:
             self.timings.record(timing_key, (time.monotonic() - capture_started) / len(pages))
 
         total_bytes = sum(path.stat().st_size for path in pages)
-        sheets = f"{len(pages)} Blatt" if len(pages) > 1 else pages[0].name
+        sheets = f"{len(pages)} sheets" if len(pages) > 1 else pages[0].name
         self.log.publish(
-            f"Scan gespeichert: {sheets} ({total_bytes:,} Bytes, {time.monotonic() - started:.1f}s)",
+            f"Scan saved: {sheets} ({total_bytes:,} bytes, {time.monotonic() - started:.1f}s)",
             "success",
         )
         return pages
 
     def _create_job(self) -> str:
         self.log.progress("job", 18)
-        duplex = " · beidseitig" if self.config.get("duplex") else ""
+        duplex = " · duplex" if self.config.get("duplex") else ""
         self.log.publish(
-            f"Starte {self.config['source']}-Scan mit {self.config['resolution']} dpi "
+            f"Starting {self.config['source']} scan at {self.config['resolution']} dpi "
             f"({self.config.get('paper_size', 'A4')}{duplex}) …"
         )
         response = scanner_session.post(
@@ -264,8 +264,8 @@ class ScannerClient:
             raise RuntimeError(self._rejection_reason(response.status_code))
         location = response.headers.get("Location")
         if not location:
-            raise RuntimeError("ScanJob wurde ohne Location-Header erstellt.")
-        self.log.publish("ScanJob angenommen; warte auf das Dokument …", "success")
+            raise RuntimeError("ScanJob was created without Location header.")
+        self.log.publish("ScanJob accepted; waiting for document …", "success")
         return urljoin(f"{self.base_url}/", location)
 
     def _require_loaded_feeder(self, adf_state: str) -> None:
@@ -274,17 +274,17 @@ class ScannerClient:
         # Short enough to read at a glance on a phone; the log carries the detail.
         if adf_state == ADF_EMPTY:
             self.log.publish(
-                "Bleibt es bei „leer“, obwohl Papier eingelegt ist, hat dieses Gerät "
-                "vermutlich keinen Einzug — dann bitte das Vorlagenglas nutzen.",
+                "If it remains 'empty' even though paper is inserted, this device "
+                "probably has no feeder — please use the flatbed instead.",
                 "warning",
             )
-            raise RuntimeError("Einzug ist leer — bitte Papier einlegen.")
+            raise RuntimeError("Feeder is empty — please insert paper.")
         if adf_state == ADF_JAM:
-            raise RuntimeError("Papierstau im Einzug — bitte Papier entfernen.")
+            raise RuntimeError("Paper jam in feeder — please remove paper.")
         if not adf_state:
             # No AdfState at all: the device does not report a feeder, so a
             # feeder job would fail with something far less readable.
-            raise RuntimeError("Dieser Scanner hat keinen Einzug — bitte Vorlagenglas wählen.")
+            raise RuntimeError("This scanner has no feeder — please select flatbed.")
 
     def _rejection_reason(self, status_code: int) -> str:
         """Say what the device meant. "HTTP 409" alone helps nobody."""
@@ -295,24 +295,24 @@ class ScannerClient:
                 # feeder job is answered 409, whatever the settings say. Blaming
                 # the paper format there would send people hunting in the wrong place.
                 return (
-                    "Der Einzug hat den Auftrag abgelehnt (HTTP 409). Das heißt bei diesen "
-                    "Geräten fast immer: Es liegt kein Papier im Einzug, es wurde nicht weit "
-                    "genug eingeschoben, oder der Drucker hat gar keinen Einzug."
+                    "The feeder rejected the job (HTTP 409). On these devices, this "
+                    "almost always means: no paper in the feeder, paper not inserted far enough, "
+                    "or the printer has no feeder at all."
                 )
             usable = paper_sizes_for((self.known_capabilities().get("limits") or {}).get(source) or {})
-            hint = f" Dieses Gerät kann hier: {', '.join(usable)}." if usable else ""
+            hint = f" This device supports: {', '.join(usable)}." if usable else ""
             return (
-                "Der Scanner lehnt mindestens eine Einstellung ab (HTTP 409). "
-                "Meist passen Papierformat oder Auflösung nicht zum Vorlagenglas." + hint
+                "The scanner rejected at least one setting (HTTP 409). "
+                "Usually paper size or resolution does not match the flatbed." + hint
             )
         if status_code == 503:
             if source == "Feeder":
-                return ("Der Scanner ist nicht bereit (HTTP 503). Liegt Papier im Einzug? "
-                        "Ein leerer Einzug meldet sich genau so.")
-            return "Der Scanner ist gerade belegt (HTTP 503). Bitte kurz warten und erneut versuchen."
+                return ("The scanner is not ready (HTTP 503). Is paper in the feeder? "
+                        "An empty feeder reports the exact same error.")
+            return "The scanner is currently busy (HTTP 503). Please wait a moment and try again."
         if status_code == 401:
-            return "Der Scanner verlangt eine Anmeldung (HTTP 401)."
-        return f"ScanJob abgelehnt (HTTP {status_code})."
+            return "The scanner requires authentication (HTTP 401)."
+        return f"ScanJob rejected (HTTP {status_code})."
 
     def _collect_pages(self, job_url: str, ramp: progress_ramp) -> list[Path]:
         """Fetch NextDocument until the scanner says there is no more paper."""
@@ -328,7 +328,7 @@ class ScannerClient:
             # not left behind for someone to find in Paperless later.
             if self.cancel.is_set():
                 self._discard(pages)
-                raise ScanCancelled("Scan abgebrochen.")
+                raise ScanCancelled("Scan cancelled.")
             response = scanner_session.get(
                 f"{job_url.rstrip('/')}/NextDocument",
                 headers={"Accept": "image/jpeg, application/pdf, application/octet-stream"},
@@ -342,20 +342,20 @@ class ScannerClient:
                     break
                 if response.status_code in (404, 410, 204):
                     raise RuntimeError(
-                        "Der Scanner hat keine Seite geliefert. "
-                        "Liegt Papier im Einzug beziehungsweise auf dem Glas?"
+                        "The scanner delivered no page. "
+                        "Is paper in the feeder or on the glass?"
                     )
-                raise RuntimeError("Der Scanner hat ein leeres Dokument geliefert.")
+                raise RuntimeError("The scanner delivered an empty document.")
             response.raise_for_status()
 
             suffix = self._suffix_for(response.headers.get("Content-Type", ""))
-            name = f"scan_{stamp}{suffix}" if limit == 1 else f"scan_{stamp}_blatt-{len(pages) + 1:02d}{suffix}"
+            name = f"scan_{stamp}{suffix}" if limit == 1 else f"scan_{stamp}_sheet-{len(pages) + 1:02d}{suffix}"
             target = output_dir / name
             target.write_bytes(response.content)
             pages.append(target)
             ramp.note(pages=len(pages))
             if limit > 1:
-                self.log.publish(f"Blatt {len(pages)} eingezogen ({len(response.content):,} Bytes).")
+                self.log.publish(f"Sheet {len(pages)} fed ({len(response.content):,} bytes).")
 
         return pages
 
@@ -400,23 +400,23 @@ class ScannerClient:
             width = min(width, max_width or width)
             height = min(height, max_height or height)
             self.log.publish(
-                f"{size_name} passt nicht auf {'das Vorlagenglas' if source == 'Platen' else 'den Einzug'}; "
-                f"es wird auf die größte mögliche Fläche zugeschnitten. "
-                f"Vollständig unterstützt: {', '.join(usable) or 'keines der angebotenen Formate'}.",
+                f"{size_name} does not fit {'the flatbed' if source == 'Platen' else 'the feeder'}; "
+                f"it will be cropped to the largest possible area. "
+                f"Fully supported: {', '.join(usable) or 'none of the offered formats'}.",
                 "warning",
             )
 
         max_resolution = limits.get("max_resolution")
         if max_resolution and resolution > max_resolution:
             self.log.publish(
-                f"{resolution} dpi kann diese Quelle nicht; es wird mit {max_resolution} dpi gescannt.",
+                f"{resolution} dpi is not supported by this source; scanning at {max_resolution} dpi instead.",
                 "warning",
             )
             resolution = max_resolution
 
         if duplex and not capabilities.get("duplex"):
             self.log.publish(
-                "Dieser Scanner kann nicht beidseitig einziehen; es wird einseitig gescannt.",
+                "This scanner cannot scan duplex; scanning single-sided.",
                 "warning",
             )
             duplex = False

@@ -51,7 +51,7 @@ class PushService:
         """Remember one browser. Returns how many are subscribed now."""
         endpoint = str(subscription.get("endpoint", "")).strip()
         if not endpoint.startswith("https://"):
-            raise ValueError("Ungültiges Push-Abonnement.")
+            raise ValueError("Invalid push subscription.")
         with self._lock:
             current = [entry for entry in self.load().get("push_subscriptions", [])
                        if entry.get("endpoint") != endpoint]
@@ -85,7 +85,7 @@ class PushService:
         try:
             from pywebpush import WebPushException, webpush
         except ImportError:
-            self.log.publish("Push-Bibliothek fehlt; Benachrichtigung entfällt.", "warning")
+            self.log.publish("Push library missing; notification skipped.", "warning")
             return
 
         alive: list[dict[str, Any]] = []
@@ -103,12 +103,12 @@ class PushService:
                 status = getattr(getattr(error, "response", None), "status_code", None)
                 if status in (404, 410):
                     # The browser dropped this subscription for good.
-                    self.log.publish("Ein Gerät empfängt keine Benachrichtigungen mehr.", "info")
+                    self.log.publish("A device no longer receives notifications.", "info")
                     continue
-                self.log.publish(f"Push fehlgeschlagen: {error}", "warning")
+                self.log.publish(f"Push notification failed: {error}", "warning")
                 alive.append(subscription)
             except Exception as error:
-                self.log.publish(f"Push fehlgeschlagen: {error}", "warning")
+                self.log.publish(f"Push notification failed: {error}", "warning")
                 alive.append(subscription)
 
         if len(alive) != len(subscriptions):

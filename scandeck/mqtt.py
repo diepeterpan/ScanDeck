@@ -26,27 +26,27 @@ ENTITIES: tuple[dict[str, Any], ...] = (
         "icon": "mdi:scanner", "value": "{{ value_json.state }}",
     },
     {
-        "kind": "sensor", "key": "progress", "name": "Fortschritt",
+        "kind": "sensor", "key": "progress", "name": "Progress",
         "icon": "mdi:progress-clock", "unit": "%", "value": "{{ value_json.progress }}",
     },
     {
-        "kind": "sensor", "key": "queue", "name": "Warteschlange",
+        "kind": "sensor", "key": "queue", "name": "Queue",
         "icon": "mdi:tray-full", "value": "{{ value_json.queue }}",
     },
     {
-        "kind": "sensor", "key": "last_file", "name": "Letzter Scan",
+        "kind": "sensor", "key": "last_file", "name": "Last Scan",
         "icon": "mdi:file-document", "value": "{{ value_json.last_file }}",
     },
     {
-        "kind": "sensor", "key": "feeder", "name": "Einzug",
+        "kind": "sensor", "key": "feeder", "name": "Feeder",
         "icon": "mdi:paper-roll", "value": "{{ value_json.feeder }}",
     },
     {
-        "kind": "binary_sensor", "key": "running", "name": "Scannt",
+        "kind": "binary_sensor", "key": "running", "name": "Scanning",
         "device_class": "running", "value": "{{ 'ON' if value_json.running else 'OFF' }}",
     },
     {
-        "kind": "binary_sensor", "key": "batch_active", "name": "Stapel offen",
+        "kind": "binary_sensor", "key": "batch_active", "name": "Batch Open",
         "icon": "mdi:layers", "value": "{{ 'ON' if value_json.batch_active else 'OFF' }}",
     },
 )
@@ -54,11 +54,11 @@ ENTITIES: tuple[dict[str, Any], ...] = (
 # Buttons an automation can press. The payload is what arrives on the command
 # topic; app.py maps it to the same actions the interface uses.
 BUTTONS: tuple[dict[str, str], ...] = (
-    {"key": "scan", "name": "Scan starten", "icon": "mdi:scanner"},
-    {"key": "cancel", "name": "Scan abbrechen", "icon": "mdi:cancel"},
-    {"key": "batch_start", "name": "Stapel starten", "icon": "mdi:layers-plus"},
-    {"key": "batch_finish", "name": "Stapel ablegen", "icon": "mdi:content-save"},
-    {"key": "batch_cancel", "name": "Stapel verwerfen", "icon": "mdi:layers-remove"},
+    {"key": "scan", "name": "Start Scan", "icon": "mdi:scanner"},
+    {"key": "cancel", "name": "Cancel Scan", "icon": "mdi:cancel"},
+    {"key": "batch_start", "name": "Start Batch", "icon": "mdi:layers-plus"},
+    {"key": "batch_finish", "name": "Save Batch", "icon": "mdi:content-save"},
+    {"key": "batch_cancel", "name": "Discard Batch", "icon": "mdi:layers-remove"},
 )
 
 
@@ -111,7 +111,7 @@ class MqttBridge:
         try:
             import paho.mqtt.client as mqtt
         except ImportError:
-            self.log.publish("MQTT-Bibliothek fehlt; Anbindung bleibt aus.", "warning")
+            self.log.publish("MQTT library missing; integration disabled.", "warning")
             return
 
         client = mqtt.Client(
@@ -128,7 +128,7 @@ class MqttBridge:
             client.connect_async(config["mqtt_host"], int(config.get("mqtt_port") or 1883), keepalive=45)
             client.loop_start()
         except (OSError, ValueError) as error:
-            self.log.publish(f"MQTT-Verbindung fehlgeschlagen: {error}", "warning")
+            self.log.publish(f"MQTT connection failed: {error}", "warning")
             return
         self._client = client
 
@@ -147,9 +147,9 @@ class MqttBridge:
 
     def _on_connect(self, client: Any, _userdata: Any, _flags: Any, reason: Any, *_args: Any) -> None:
         if getattr(reason, "value", reason) != 0:
-            self.log.publish(f"MQTT-Broker lehnt die Anmeldung ab ({reason}).", "warning")
+            self.log.publish(f"MQTT broker rejected login ({reason}).", "warning")
             return
-        self.log.publish("MQTT verbunden; Home Assistant legt die Geräte an.", "success")
+        self.log.publish("MQTT connected; Home Assistant discovering entities.", "success")
         client.subscribe(f"{BASE_TOPIC}/command")
         client.publish(f"{BASE_TOPIC}/availability", "online", retain=True)
         self.announce()
@@ -161,7 +161,7 @@ class MqttBridge:
         try:
             self.on_command(command)
         except Exception as error:  # a bad command must not kill the loop
-            self.log.publish(f"MQTT-Befehl „{command}“ fehlgeschlagen: {error}", "warning")
+            self.log.publish(f"MQTT command '{command}' failed: {error}", "warning")
 
     # --- publishing ------------------------------------------------------- #
 

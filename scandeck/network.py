@@ -130,14 +130,14 @@ def discover_escl_scanners(config: dict[str, Any], log: LogHub) -> list[dict[str
     """Probe a bounded private IPv4 subnet for eSCL ScannerCapabilities."""
     subnet = config.get("discovery_subnet") or guess_local_subnet()
     if not subnet:
-        raise ValueError("Kein Netzwerk für die Suche angegeben.")
+        raise ValueError("No network specified for scanner discovery.")
     network = ip_network(subnet, strict=False)
     if not isinstance(network, IPv4Network):
-        raise ValueError("Die Scanner-Suche akzeptiert nur IPv4-Netze.")
+        raise ValueError("Scanner discovery only accepts IPv4 networks.")
     verify_ssl = config["verify_scanner_ssl"]
     if not verify_ssl:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    log.publish(f"Suche eSCL-Scanner in {network} …")
+    log.publish(f"Searching for eSCL scanners in {network} …")
 
     devices: list[dict[str, str]] = []
     addresses = [str(host) for host in network.hosts()]
@@ -149,7 +149,7 @@ def discover_escl_scanners(config: dict[str, Any], log: LogHub) -> list[dict[str
                 devices.append(device)
     devices.sort(key=lambda device: device["url"])
     log.publish(
-        f"Scanner-Suche abgeschlossen · {len(devices)} Gerät(e) gefunden.",
+        f"Scanner discovery complete · {len(devices)} device(s) found.",
         "success" if devices else "warning",
     )
     return devices
@@ -163,7 +163,7 @@ def autodiscover_scanners(
 ) -> tuple[list[dict[str, str]], str]:
     """Probe the likeliest networks in order and stop at the first hit."""
     candidates = candidate_subnets(config, client_address)[:limit]
-    log.publish(f"Automatische Suche in: {', '.join(candidates)}")
+    log.publish(f"Automatic search in: {', '.join(candidates)}")
     for subnet in candidates:
         devices = discover_escl_scanners({**config, "discovery_subnet": subnet}, log)
         if devices:

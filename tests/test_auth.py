@@ -40,7 +40,7 @@ def test_enabling_locks_the_interface_and_signs_this_browser_in(client, deck):
 def test_a_short_password_is_refused(client, deck):
     response = client.post("/api/auth/enable", json={"password": "kurz"})
     assert response.status_code == 400
-    assert "8 Zeichen" in response.get_json()["error"]
+    assert "8 characters" in response.get_json()["error"]
     assert deck.store.get()["auth_enabled"] is False
 
 
@@ -140,7 +140,7 @@ def test_repeated_wrong_passwords_are_throttled(locked, deck):
         locked.post("/api/auth/login", json={"password": "daneben"})
     response = locked.post("/api/auth/login", json={"password": PASSWORD})
     assert response.status_code == 429  # even the right one has to wait now
-    assert "warten" in response.get_json()["error"]
+    assert "wait" in response.get_json()["error"]
 
 
 def test_a_successful_login_clears_the_failure_count(locked, deck):

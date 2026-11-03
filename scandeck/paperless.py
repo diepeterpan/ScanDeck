@@ -21,13 +21,13 @@ class PaperlessClient:
     def require_config(self) -> None:
         """Fail early — before the scanner is asked to pull in a sheet."""
         if not self.base_url or not self.config.get("paperless_token"):
-            raise RuntimeError("Paperless-URL oder API-Token fehlt.")
+            raise RuntimeError("Paperless URL or API token missing.")
 
     def test(self) -> None:
         self.require_config()
         response = requests.get(f"{self.base_url}/api/documents/?page_size=1", headers=self.headers, timeout=20)
         response.raise_for_status()
-        self.log.publish("Paperless-ngx erreichbar und Token akzeptiert.", "success")
+        self.log.publish("Paperless-ngx reachable and token accepted.", "success")
 
     def upload(self, file_path: Path) -> str:
         """Hand the file to Paperless and return the task id it answers with."""
@@ -39,7 +39,7 @@ class PaperlessClient:
             value = self.config.get(field)
             if value:
                 data.append((field, str(value)))
-        self.log.publish(f"Lade {file_path.name} nach Paperless-ngx hoch …")
+        self.log.publish(f"Uploading {file_path.name} to Paperless-ngx …")
         with file_path.open("rb") as document:
             response = requests.post(
                 f"{self.base_url}/api/documents/post_document/",
@@ -50,7 +50,7 @@ class PaperlessClient:
             )
         response.raise_for_status()
         task_id = response.text.strip().strip('"')
-        self.log.publish(f"Paperless-ngx hat {file_path.name} angenommen, Verarbeitung läuft …", "success")
+        self.log.publish(f"Paperless-ngx accepted {file_path.name}, processing started …", "success")
         return task_id
 
     def task_state(self, task_id: str) -> dict[str, Any]:
@@ -123,9 +123,9 @@ class PaperlessClient:
                 )
                 created.raise_for_status()
                 tag_id = created.json().get("id")
-                self.log.publish(f"Paperless-Tag erstellt: {tag_name}")
+                self.log.publish(f"Paperless tag created: {tag_name}")
             if tag_id is None:
-                self.log.publish(f"Tag fehlt in Paperless und wurde übersprungen: {tag_name}", "warning")
+                self.log.publish(f"Tag missing in Paperless and was skipped: {tag_name}", "warning")
             else:
                 tag_ids.append(int(tag_id))
         return tag_ids

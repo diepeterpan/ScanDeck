@@ -156,5 +156,5 @@ def test_a_run_of_nothing_but_blanks_is_reported(deck, tmp_path):
     sheets = [page(tmp_path, "a.pdf"), page(tmp_path, "b.pdf")]
     config = {**deck.store.get(), "skip_blank_pages": True}
 
-    with pytest.raises(RuntimeError, match="leer"):
+    with pytest.raises(RuntimeError, match="blank"):
         deck.tidy_sheets(sheets, config)

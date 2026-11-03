@@ -1,8 +1,8 @@
 {
   "name": "Scan Deck · Paperless Scanner",
   "short_name": "Scan Deck",
-  "description": "Dokumente scannen und direkt nach Paperless-ngx übertragen.",
-  "lang": "de",
+  "description": "Scan documents and transfer them directly into Paperless-ngx.",
+  "lang": "en",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -17,13 +17,13 @@
   ],
   "shortcuts": [
     {
-      "name": "Sofort scannen",
+      "name": "Scan now",
       "short_name": "Scan",
       "url": "/?action=scan",
       "icons": [{ "src": "/static/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Einstellungen",
+      "name": "Settings",
       "short_name": "Setup",
       "url": "/?view=settings",
       "icons": [{ "src": "/static/icons/icon-192.png", "sizes": "192x192" }]

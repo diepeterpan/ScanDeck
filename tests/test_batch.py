@@ -239,7 +239,7 @@ def test_finishing_writes_the_document_and_records_it(deck, tmp_path, monkeypatc
     target = deck.finish_batch(config, ["Rechnung"])
 
     assert target.exists() and target.suffix == ".pdf"
-    assert "2-seiten" in target.name
+    assert "2-pages" in target.name
     assert deck.scan_state["last_name"] == target.name
     # The batch is empty again and its scratch files are gone.
     assert deck.batch.count() == 0
@@ -256,7 +256,7 @@ def test_finishing_a_feeder_stack_keeps_every_page(deck, tmp_path, monkeypatch):
     target = deck.finish_batch(deck.validate_config(deck.store.get()), [])
     assert pdf_pages(target) == 5
     assert recorded["pages"] == 5
-    assert "5-seiten" in target.name
+    assert "5-pages" in target.name
 
 
 def test_finishing_an_empty_batch_is_refused(client, deck):

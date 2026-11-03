@@ -100,7 +100,7 @@ class BatchCollector:
                     "rotation": 0,
                 })
         if not entries:
-            raise RuntimeError("Der Scan hat keine Seite ergeben.")
+            raise RuntimeError("The scan yielded no pages.")
 
         with self._lock:
             index = self._replace_index
@@ -196,7 +196,7 @@ class BatchCollector:
     def merge_into(self, target: Path) -> int:
         pages = self.pages()
         if not pages:
-            raise RuntimeError("Der Stapel enthält keine Seiten.")
+            raise RuntimeError("The batch contains no pages.")
         return merge_pages(pages, target)
 
 

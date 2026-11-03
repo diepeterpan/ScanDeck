@@ -1,28 +1,28 @@
 # ScanDeck
 
-**Dokument auf den Scanner legen, Handy zücken, Knopf drücken — fertig, es liegt in Paperless-ngx.**
+**Place document on scanner, take out your phone, tap the button — done, it's in Paperless-ngx.**
 
-Kein PC hochfahren, keine Scan-Software, kein USB-Kabel, kein Umweg über den Download-Ordner. ScanDeck spricht direkt mit deinem Netzwerkscanner (HP, Brother, Canon, Epson — alles, was eSCL/AirScan kann) und schiebt das Ergebnis als PDF sofort in Paperless-ngx. Bedient wird es über eine Webseite, die auf dem Handy aussieht und sich anfühlt wie eine App — du kannst sie dir auf den Homescreen legen.
+No booting up a PC, no scanning software, no USB cable, no detours through your downloads folder. ScanDeck communicates directly with your network scanner (HP, Brother, Canon, Epson — anything supporting eSCL/AirScan) and pushes the result as a PDF directly into Paperless-ngx. It is operated via a responsive web interface designed for mobile phones that feels like a native app — ready to be added to your home screen.
 
-Der Ablauf, den du danach hast: Post aufmachen, Blatt auf die Glasplatte, am Handy auf *Scan starten* tippen, kurz die Vorschau sehen — und das Dokument ist getaggt in Paperless. Das sind ein paar Sekunden statt einer kleinen Bastelrunde pro Brief.
+Your daily routine: open mail, place page on glass, tap *Start scan* on your phone, see a brief preview — and the document is tagged in Paperless. A matter of seconds instead of manual effort per letter.
 
-Und wenn es noch weniger sein soll: Über die Home-Assistant-Schnittstelle löst ein Taster, ein NFC-Tag oder ein Bewegungsmelder den Scan aus. Dann drückst du nicht mal mehr aufs Handy.
+Need even less friction? Trigger scans via Home Assistant buttons, NFC tags, or motion sensors. You won't even need to touch your phone.
 
-| Dashboard | Scanvorgang |
+| Dashboard | Scanning progress |
 | --- | --- |
-| ![Dashboard](assets/mainpage.png) | ![Scanfortschritt](assets/scan.png) |
+| ![Dashboard](assets/mainpage.png) | ![Scanning progress](assets/scan.png) |
 
-## Loslegen
+## Getting Started
 
-Das fertige Image liegt in der GitHub Container Registry, gebaut für `amd64` und `arm64` (läuft also auch auf dem Raspberry Pi). Nichts kompilieren, einfach ziehen.
+The prebuilt image is hosted on GitHub Container Registry, built for both `amd64` and `arm64` (runs great on a Raspberry Pi). No compilation required, just pull and run.
 
-**Mit Docker Compose** — [`docker-compose.yaml`](docker-compose.yaml) herunterladen und starten:
+**With Docker Compose** — download [`docker-compose.yaml`](docker-compose.yaml) and start:
 
 ```bash
 docker compose up -d
 ```
 
-**Oder mit einem einzelnen Befehl:**
+**Or with a single docker command:**
 
 ```bash
 docker run -d \
@@ -34,30 +34,30 @@ docker run -d \
   ghcr.io/dersumo/scandeck:latest
 ```
 
-Dann `http://localhost:8080` im Browser öffnen (oder vom Handy aus die IP des Servers, z. B. `http://192.168.1.10:8080`).
+Then open `http://localhost:8080` in your browser (or use your server's LAN IP from your phone, e.g. `http://192.168.1.10:8080`).
 
-Beim ersten Start ist **nichts vorkonfiguriert** — es begrüßt dich ein Einrichtungsassistent, der den Scanner im Netzwerk sucht, nach Paperless-ngx fragt und Format sowie Tags festlegt. Danach ist Ruhe, du siehst nur noch den Scan-Knopf.
+On first start, **nothing is preconfigured** — you will be welcomed by a setup wizard that discovers scanners on your network, asks for Paperless-ngx connection details, and sets up format and tags. Once completed, only the clean scan button remains.
 
-Einstellungen landen in `./data/config.json`, die Scans in `./scans`. Beides sind Volumes und überleben ein Update.
+Configuration is saved in `./data/config.json`, scans in `./scans`. Both are volume mounts and persist across updates.
 
-Aktualisieren und stoppen:
+Update and stop:
 
 ```bash
 docker compose pull && docker compose up -d
 docker compose down
 ```
 
-Wer das Image lieber selbst baut, klont das Repository und nutzt das mitgelieferte [Dockerfile](Dockerfile):
+To build the image yourself, clone the repository and use the provided [Dockerfile](Dockerfile):
 
 ```bash
 docker build -t scandeck .
 ```
 
-### Dateirechte
+### File Permissions
 
-Darum musst du dich normalerweise nicht kümmern: Der Container startet als root, setzt die Rechte der gemounteten Ordner `./data` und `./scans` einmalig zurecht und gibt die Privilegien dann ab — der Dienst selbst läuft unprivilegiert als UID 10001.
+Under normal conditions you do not need to configure anything: the container starts as root, sets permissions on `./data` and `./scans` once, and drops privileges — the service runs unprivileged as UID 10001.
 
-Sollen die Dateien einem bestimmten Host-Benutzer gehören, dessen IDs setzen (auf dem Host mit `id -u` und `id -g` ablesen):
+To own the files with a specific host user, specify user and group IDs (read them on host via `id -u` and `id -g`):
 
 ```yaml
 environment:
@@ -65,150 +65,143 @@ environment:
   PGID: 1000
 ```
 
-Wenn der Container per `user:` in der Compose-Datei ohne root-Rechte gestartet wird, kann er die Ordner nicht selbst korrigieren. Dann muss das einmal auf dem Host passieren:
+If starting the container using `user:` in docker-compose without root privileges, the container cannot adjust folder permissions on its own. Set ownership once on the host:
 
 ```bash
 sudo chown -R 1000:1000 ./data ./scans
 ```
 
-Fehlen die Rechte, sagt ScanDeck das beim Start im Containerlog und beim Speichern als Fehlermeldung in der Oberfläche.
+If permissions are missing, ScanDeck reports it on startup in container logs and displays an error toast when saving.
 
-## Als App aufs Handy legen (PWA)
+## Add to Phone as an App (PWA)
 
-Die Oberfläche ist installierbar: In Chrome/Android über *Zum Startbildschirm hinzufügen*, in Safari/iOS über *Teilen → Zum Home-Bildschirm*. Sie läuft dann im Vollbild ohne Browserleiste, respektiert die Safe-Area und funktioniert offline so weit, dass die Oberfläche lädt (Scans brauchen natürlich das Netzwerk). Schnellaktionen im App-Icon: *Sofort scannen* und *Einstellungen*.
+The web UI is installable as a Progressive Web App: in Chrome/Android via *Add to Home screen*, in Safari/iOS via *Share → Add to Home Screen*. It runs fullscreen without browser bars, respects safe-areas, and loads offline shells. App icon shortcuts: *Scan now* and *Settings*.
 
-Damit iOS die App installieren lässt, muss die Seite über HTTPS oder `localhost` erreichbar sein — im LAN also am besten hinter einem Reverse Proxy mit Zertifikat.
+For iOS to allow installation, the page must be reached via HTTPS or `localhost` — best set up behind a reverse proxy with TLS certificates on your LAN.
 
-## Bedienung
+## Operation
 
-**Dashboard** ist auf den täglichen Ablauf reduziert: großer Scan-Button mit Fortschrittsring, vier antippbare Schnellschalter (Quelle, Format, DPI, Farbe — jeder Tipp schaltet weiter und speichert sofort), Session-Tags nur für den nächsten Scan, Statuskacheln und ein einklappbares Live-Protokoll.
+**Dashboard** is focused on the daily workflow: large scan orb with progress ring, four quick switches (Source, Format, DPI, Color — each tap cycles options and saves immediately), session tags for the next scan, status tiles, and a collapsible live log.
 
-Während des Scans erscheint eine Fortschrittsanzeige mit Prozentwert, Laufzeit und Phasen (Verbindung → Erfassen → Speichern → Upload) sowie ein **Abbruch-Knopf**. Der stoppt den Auftrag auch auf dem Gerät, sodass der Scanner sofort wieder frei ist. Abbrechen heißt: Dieser Scan hat nicht stattgefunden — bereits eingezogene Blätter werden verworfen, damit kein halbes Dokument in Paperless landet. Ein laufender Stapel behält natürlich alles, was vorher schon gesammelt wurde. Anschließend wird der Scan **10 Sekunden lang als Vorschau** eingeblendet (Dauer unter *Einstellungen → Ausgabe* änderbar, `0` schaltet sie ab). Über *Angeheftet lassen* bleibt die Vorschau offen, *Öffnen* zeigt die Originaldatei.
+During a scan, a progress sheet shows percentage, elapsed time, and stages (Connection → Capturing → Saving → Upload) along with a **Cancel button**. Cancellation stops the hardware job immediately so the device is free again. Cancelling means the scan did not occur — partially fed sheets are discarded so incomplete documents never reach Paperless. A running batch keeps previously collected pages. After a scan, a **10-second preview** is shown (configurable under *Settings → Output*, set `0` to disable). *Keep pinned* keeps the preview open; *Open* views the original file.
 
-### Mehrere Seiten in eine PDF
+### Multi-Page Scans (Batch)
 
-Für alles, was länger als ein Blatt ist: Auf dem Dashboard den Schalter **Stapel** umlegen. Ab dann landet jeder Scan als Seite im Stapel statt sofort in Paperless. Du scannst also Blatt für Blatt, siehst die Seiten als Vorschaubilder untereinander und drückst am Ende **Als PDF ablegen** — daraus wird ein einziges Dokument, das als Ganzes hochgeladen wird.
+For documents with more than one page: toggle **Batch** on the dashboard. From then on, every scan is collected as a page in the batch instead of uploaded immediately. Scan page by page, inspect thumbnails in the list, and tap **Save as PDF** when done — merging them into a single PDF uploaded as one document.
 
-Was du mit einer einzelnen Seite machen kannst — das Fragezeichen neben der Überschrift erklärt es auch in der App:
+Batch page actions — explained in-app via the question mark icon:
 
-- **Ziehen** — Seite antippen, kurz halten und an die richtige Stelle schieben. Falls Seite 1 und 2 vertauscht sind, muss nichts neu gescannt werden. Funktioniert auf dem Handy wie am Rechner; ein normaler Wisch scrollt weiterhin die Seite.
-- **↻ Drehen** — dreht die Seite um 90° im Uhrzeigersinn, genau so wie sie später im PDF liegt. Mehrfach drücken dreht weiter.
-- **⟳ Neu scannen** — markiert die Seite; der nächste Scan tauscht genau diese Seite 1:1 aus, die Reihenfolge bleibt. Nochmal drücken bricht ab.
-- **× Entfernen** — wirft die Seite aus dem Stapel.
-- **Alle drehen / Reihenfolge umkehren** — ab zwei Seiten. Ein Einzug legt Stapel gern kopfüber oder rückwärts ein; beides ist damit in einem Tipp erledigt statt Seite für Seite.
-- **Antippen** — zeigt die Seite groß. Auf der kleinen Kachel ist oft nicht zu erkennen, welche Seite welche ist; in der Lupe blätterst du mit den Pfeilen (oder den Pfeiltasten) durch den Stapel und kannst von dort aus drehen, neu scannen oder entfernen.
+- **Drag** — touch and hold to reorder pages. If pages 1 and 2 were swapped, no need to rescan. Works on mobile touchscreens as well as desktop mouse drag.
+- **↻ Rotate** — rotates page 90° clockwise. Press repeatedly to rotate further.
+- **⟳ Rescan** — arms the page; the next scan replaces this page 1:1 while maintaining page order. Tap again to disarm.
+- **× Remove** — removes page from batch.
+- **Rotate all / Reverse order** — available when batch has 2+ pages. Feeder stacks often arrive upside down or in reverse; one tap fixes the entire batch.
+- **Tap** — opens full-size view. The zoom overlay lets you browse pages with arrows and rotate, rescan or delete.
 
-Während ein Stapel gesammelt wird, zeigt die Fortschrittsanzeige nur drei Schritte — es wird ja nichts hochgeladen. Der Upload-Schritt taucht erst beim Abschließen wieder auf.
+While collecting a batch, progress indicators show only three stages (no upload occurs yet). The upload step appears once the batch is closed.
 
-Während eines Stapels erscheint bewusst keine Vollbild-Vorschau nach jeder Seite; das Vorschaubild in der Liste reicht und hält den Ablauf schnell. Erst das fertige Dokument wird wieder groß angezeigt. Der Stapel überlebt einen Seiten-Reload und ist auf allen Geräten gleich — du kannst also am Handy scannen und am Rechner sortieren.
+Batches persist across page reloads and are synchronized across devices — scan from your phone and organize from your desktop.
 
-Das Format des Stapels ist immer PDF, unabhängig von der Formateinstellung. Einzelne Seiten dürfen gemischt sein (PDF vom Scanner oder JPEG), sie werden beim Zusammenführen vereinheitlicht.
+Batches are always merged and output as PDF regardless of format settings. Individual pages can be mixed (scanner PDFs or JPEGs) and are standardized on merge.
 
-### Einzug und Stapel zusammen
+### Document Feeder (ADF) & Batches
 
-Der automatische Einzug (ADF) und der Stapel-Modus gehen zusammen, und zwar seitenweise: Legst du fünf Blatt ein, holt ScanDeck alle fünf und legt **fünf einzelne Kacheln** in den Stapel. Jede davon lässt sich für sich verschieben, drehen, neu scannen oder wegwerfen — genau wie eine einzeln vom Glas gescannte Seite.
+The automatic document feeder (ADF) and batch mode work seamlessly together: feed 5 sheets, and ScanDeck produces **5 individual page tiles** in the batch. Each can be moved, rotated, rescanned, or discarded individually.
 
-Das gilt auch, wenn der Scanner den ganzen Einzug als *ein* mehrseitiges PDF zurückgibt (viele Geräte tun das): ScanDeck zerlegt es in Einzelseiten, bevor sie im Stapel landen. Beim Abschließen werden sie in der von dir gewählten Reihenfolge wieder zu einem Dokument zusammengesetzt.
+This also applies when scanners deliver the entire feeder run as *one* multi-page PDF: ScanDeck splits it into individual pages before placing them in the batch. On finish, they are merged in your specified order.
 
-Ist **Neu scannen** auf einer Seite markiert und der Einzug liefert mehrere Blatt, ersetzt das erste Blatt die markierte Seite und der Rest wird direkt dahinter eingefügt — die Seiten danach behalten ihre Reihenfolge.
+If **Rescan** is armed on a page and the feeder yields multiple sheets, the first sheet replaces the armed page and subsequent sheets are inserted immediately after — subsequent pages maintain their position.
 
-**Ohne** Stapel-Modus wird ein Einzugsdurchlauf zu einem einzigen Dokument zusammengefasst und als Ganzes hochgeladen, nicht zu fünf einzelnen Dateien.
+**Without** batch mode enabled, a feeder scan is merged directly into a single PDF document and uploaded as one file.
 
-Unter *Einstellungen → Ausgabe* stehen dazu **Papierformat** (A4, Letter, Legal, A5) und **Beidseitig einziehen** — letzteres erscheint nur, wenn als Quelle der Einzug gewählt ist.
+Under *Settings → Output*, you can choose **Paper size** (A4, Letter, Legal, A5) and **Duplex scan** (only available when Feeder is selected).
 
-**Liegt Papier im Einzug?** Ist der Einzug als Quelle gewählt, steht direkt unter den Schnellschaltern, was der Scanner sieht: *Einzug bestückt* oder *Einzug leer — Papier einlegen*. Die Anzeige wird laufend aufgefrischt, solange die App offen ist — legst du Papier nach, springt sie binnen Sekunden um. Damit ist vor dem Scan klar, woran man ist. Erkennt das Gerät eingelegtes Papier nicht, liegt es meist nicht weit genug im Fach; ScanDeck sagt das vor dem Scan, statt einen Auftrag abzuschicken, den der Drucker mit einem nackten „HTTP 409“ zurückweist.
+**Paper in feeder status:** When Feeder is chosen as source, a live indicator shows scanner status: *Feeder loaded* or *Feeder empty — please insert paper*. It updates continuously while the app is active. If paper is not recognized, it usually needs to be pushed further into the tray; ScanDeck informs you before attempting a scan rather than failing with an opaque HTTP 409 error.
 
-Unter *Einstellungen → Was dein Scanner kann* steht, was das Gerät gemeldet hat: je Quelle die unterstützten Auflösungen, die scanbare Fläche in Millimetern, die möglichen Papierformate, Farbmodi und Dateiformate. Da lässt sich nachsehen statt raten, wie viel dpi der eigene Drucker wirklich schafft.
+Under *Settings → Device capabilities*, you can inspect reported scanner hardware limits: supported resolutions per source, printable area in millimeters, accepted paper formats, color modes, and formats.
 
-ScanDeck fragt das auch selbst ab und bietet nur an, was geht: Ein Vorlagenglas, das bei A4 endet, zeigt Legal durchgestrichen; ein Einzug, der bei 300 dpi aufhört, sperrt 600 und 1200; ohne beidseitigen Einzug fehlt der Duplex-Schalter. Kommt eine Einstellung trotzdem einmal nicht durch — etwa aus einer älteren Konfiguration —, wird sie auf das machbare Maß gebracht und die Anpassung im Protokoll genannt, statt den Scan mit einem nackten „HTTP 409“ abzubrechen.
+ScanDeck queries capabilities automatically and limits UI options accordingly: flatbeds maxing out at A4 will disable Legal; feeders maxing out at 300 dpi disable 600 and 1200; scanners without duplex feeder hide the duplex toggle.
 
-### Profile
+### Profiles
 
-Wer immer wieder dasselbe scannt, legt sich dafür ein Profil an: *Einstellungen → Profile → Hinzufügen* übernimmt, was gerade eingestellt ist — Quelle, Auflösung, Farbe, Format, Papierformat und die Tags. Auf der Startseite steht das Profil dann als Knopf über dem Scan-Knopf; ein Tipp darauf scannt sofort mit diesen Werten.
+For recurring tasks, configure profiles: *Settings → Profiles → Add* captures current settings — source, resolution, color, format, paper size, and tags. On the dashboard, the profile appears as a one-tap button above the scan orb.
 
-Home Assistant kann ein Profil ebenfalls beim Namen nennen:
+Home Assistant automations can reference profiles by name:
 
 ```yaml
 rest_command:
-  scandeck_rechnung:
+  scandeck_invoice:
     url: "http://scandeck:8080/api/ha/scan"
     method: POST
     headers: { X-API-Key: !secret scandeck_key }
-    payload: '{"profile": "rechnung"}'
+    payload: '{"profile": "invoice"}'
     content_type: "application/json"
 ```
 
-### Nachbearbeitung
+### Post-Processing
 
-Zwei Schalter unter *Einstellungen → Nachbearbeitung*, beide bewusst aus:
+Two optional switches under *Settings → Post-processing* (disabled by default):
 
-- **Leere Seiten überspringen** — beim beidseitigen Einzug sind die Rückseiten meist unbedruckt. Gemessen wird der Tintenanteil ohne die äußeren vier Prozent, damit Staub und der Schatten des Deckels nicht als Inhalt zählen. Eine Seite mit einer einzigen Zeile gilt nie als leer. Jede übersprungene Seite steht im Protokoll.
-- **Schiefe Seiten geraderücken** — richtet schief eingezogene Blätter auf, was die Texterkennung in Paperless spürbar verbessert. Die Seite wird dafür neu aufgebaut; unter 0,4° Abweichung passiert nichts.
+- **Skip blank pages** — especially helpful for duplex feeder scans. Evaluates ink density excluding the outer 4% margins so dust and cover shadows do not count as content. Pages with even single lines of text are kept. Skipped pages are logged.
+- **Deskew crooked pages** — straightens misaligned pages, improving Paperless OCR quality. Pages are re-rasterized; deviations under 0.4° are ignored.
 
-### Verlauf und Warteschlange
+### History and Queue
 
-Der Reiter **Verlauf** zeigt jeden Scan mit Vorschaubild und dem, was daraus geworden ist. ScanDeck bleibt nämlich dran, bis Paperless-ngx bestätigt hat:
+The **History** tab shows every scan with preview thumbnails and upload status:
 
-- **Wartet auf Upload** — Paperless war nicht erreichbar. ScanDeck versucht es von selbst erneut, mit wachsendem Abstand (30 s, 2 min, 5 min, 15 min, dann stündlich). Nichts geht verloren, auch wenn dein Server gerade neu startet.
-- **Wird verarbeitet** — die Datei ist drüben, Paperless arbeitet noch.
-- **In Paperless** — bestätigt, mit Dokumentnummer.
-- **Duplikat** — Paperless kennt das Dokument schon und hat es abgelehnt. Früher hättest du das nie erfahren.
-- **Fehlgeschlagen** — mit Begründung von Paperless.
+- **Waiting for upload** — Paperless was unreachable. ScanDeck retries automatically with exponential backoff (30s, 2m, 5m, 15m, then hourly). No scan is lost during server restarts.
+- **Processing** — file uploaded, Paperless task in progress.
+- **In Paperless** — confirmed, with document ID.
+- **Duplicate** — Paperless rejected file as duplicate.
+- **Failed** — with error explanation from Paperless.
 
-Pro Eintrag kannst du erneut senden, die Datei öffnen oder Eintrag und Datei löschen.
+Each entry allows re-uploading, viewing the file, or deleting entry and file.
 
-### Aufräumen
+### Cleanup
 
-Unter *Einstellungen → Aufräumen* lässt sich einschalten, dass lokale Kopien nach einer Wartezeit (Standard 24 Stunden) gelöscht werden. Damit läuft der Ordner nicht voll, obwohl er auf einem Volume liegt.
+Under *Settings → Cleanup*, enable automatic removal of local files after a retention period (default 24 hours).
 
-Gelöscht wird ausschließlich, was Paperless **bestätigt** hat. Alles, was noch in der Warteschlange hängt, abgelehnt wurde oder als Duplikat gilt, bleibt liegen — die Wartezeit kann eine offene Datei also nie wegräumen. Der Eintrag im Verlauf bleibt erhalten und zeigt an, dass die lokale Kopie aufgeräumt wurde.
+Only files **confirmed** by Paperless are deleted. Documents still in queue, rejected, or duplicates are preserved.
 
 ### Extras
 
-Damit das Dashboard schlank bleibt, sind Zusatzfunktionen unter *Einstellungen → Extras* einzeln zuschaltbar:
+Under *Settings → Extras*:
 
-- **Korrespondent und Dokumenttyp beim Scannen wählen** — ScanDeck lädt beide Listen aus deiner Paperless-Instanz. Die Auswahl gilt für den nächsten Scan und wird nicht dauerhaft gespeichert, spart aber das spätere Nachsortieren.
-- **Schnell-Tags** — die meistgenutzten Tags aus Paperless als antippbare Vorschläge über dem Eingabefeld. Eigene Tags lassen sich weiterhin frei eintippen.
-- **Scanner beim Öffnen aufwecken** — siehe Geschwindigkeit.
+- **Choose correspondent and document type when scanning** — loaded dynamically from your Paperless instance for one-off tagging before scan.
+- **Quick tags** — most frequently used tags in Paperless as tap-to-add chips.
+- **Prewarm scanner on app open** — queries scanner status as soon as app opens to wake hardware from sleep.
 
-**Einstellungen** verwaltet Scanner, Paperless-ngx, Ausgabe, Standard-Tags, Home Assistant und das Zurücksetzen der Konfiguration.
+Settings manages Scanner, Paperless-ngx, Output, Default Tags, Home Assistant, and Configuration Reset.
 
-- Unter **Scanner** genügt ein Klick auf *Netzwerk automatisch durchsuchen*. ScanDeck rät das Netz nicht, sondern leitet es aus der Adresse des Geräts ab, mit dem du gerade die Oberfläche geöffnet hast — das steht im selben Netz wie der Scanner. Zusätzlich werden die Netze deiner Paperless-Adresse und die üblichen Router-Standards (`192.168.0.x`, `192.168.1.x`, `192.168.178.x`, `10.0.0.x`) geprüft, bis etwas gefunden wird. Docker-eigene Netze werden dabei ans Ende gestellt, weil dort nie ein Scanner steht. Manuell geht weiterhin über *Netzwerk manuell angeben*. Die Suche prüft ausschließlich `ScannerCapabilities` und löst keinen Scan aus.
-- Der Paperless-Token wird nur in `./data/config.json` gespeichert und nie wieder an den Browser ausgegeben.
-- Standardformat ist **PDF**.
-- *Konfiguration löschen* setzt alles zurück und startet den Assistenten erneut.
+## Push Notifications to Phone
 
-## Benachrichtigungen aufs Handy
+Under *Settings → Push notifications*, enable Web Push to receive notifications as soon as Paperless files a document — even with the app closed. Requires **HTTPS** (and on iOS, adding to home screen). Keys are generated locally and stored securely on your instance.
 
-Unter *Einstellungen → Benachrichtigungen* lässt sich Web Push einschalten. Danach meldet sich das Telefon, sobald Paperless das Dokument angelegt hat — auch wenn die App geschlossen ist. Voraussetzung ist eine Erreichbarkeit über **HTTPS** (auf dem iPhone zusätzlich: die App muss auf dem Startbildschirm liegen). Die Schlüssel erzeugt ScanDeck beim Einschalten selbst und legt sie nur lokal ab.
-
-Wer es leiser mag: Unter *Extras* gibt es **Ton und Vibration**, wenn ein Scan fertig ist. Das braucht kein HTTPS und keine Erlaubnis.
+Under *Extras*, **Sound and vibration** provides immediate local feedback on scan completion without HTTPS or push permissions.
 
 ## Home Assistant
 
-### Der bequeme Weg: MQTT
+### Recommended: MQTT
 
-Steht ein MQTT-Broker bereit (etwa das Mosquitto-Add-on), reicht *Einstellungen → Home Assistant über MQTT*: Adresse eintragen, verbinden — fertig. ScanDeck erscheint in Home Assistant als eigenes Gerät, ohne einen einzigen Eintrag in `configuration.yaml`:
+With an MQTT broker (like Mosquitto): configure *Settings → Home Assistant via MQTT* with host, credentials, and connect. ScanDeck registers automatically as a Home Assistant device with no manual `configuration.yaml` required:
 
-| Knöpfe | Sensoren |
+| Buttons | Sensors |
 | --- | --- |
-| Scan starten, Scan abbrechen | Status, Fortschritt, Warteschlange |
-| Stapel starten, ablegen, verwerfen | Letzter Scan, Einzug, Scannt, Stapel offen |
+| Start scan, Cancel scan | Status, Progress, Queue |
+| Start batch, Save batch, Discard batch | Last scan, Feeder status, Scanning, Batch open |
 
-Damit lässt sich ein Scan per Automatisierung auslösen, der Fortschritt auf einem Dashboard anzeigen und etwa eine Meldung schicken, wenn die Warteschlange nicht leerläuft.
+### REST API
 
-### Der klassische Weg: REST
+Under *Settings → Home Assistant*, enable the REST interface; an API key is generated locally.
 
-Unter *Einstellungen → Home Assistant* die Schnittstelle aktivieren; dabei wird lokal ein API-Key erzeugt. Die passende YAML-Konfiguration steht dort zum Kopieren bereit.
-
-| Endpoint | Methode | Zweck |
+| Endpoint | Method | Purpose |
 | --- | --- | --- |
-| `/api/ha/scan` | POST | Scan auslösen. Optionaler JSON-Body: `tags`, `source`, `resolution`, `color_mode`, `output_format`, `upload_to_paperless`, `title_prefix`. |
-| `/api/ha/state` | GET | Status für einen RESTful-Sensor: `state` (`idle`/`scanning`/`error`), `progress`, `stage`, `last_file`, `last_error`. |
-| `/api/ha/batch` | POST | Stapel steuern: `{"action": "start"}`, `"finish"` oder `"cancel"`. Bei laufendem Stapel wird jeder ausgelöste Scan zu einer weiteren Seite. |
-| `/api/ha/test` | POST | Verbindungstest. |
+| `/api/ha/scan` | POST | Trigger scan. Optional JSON payload: `tags`, `source`, `resolution`, `color_mode`, `output_format`, `upload_to_paperless`, `title_prefix`. |
+| `/api/ha/state` | GET | Status for RESTful sensors: `state` (`idle`/`scanning`/`error`), `progress`, `stage`, `last_file`, `last_error`. |
+| `/api/ha/batch` | POST | Control batch: `{"action": "start"}`, `"finish"`, or `"cancel"`. |
+| `/api/ha/test` | POST | Connection test. |
 
-Authentifizierung über den Header `X-API-Key` (alternativ `Authorization: Bearer …` oder `?api_key=`). Ohne aktivierte Schnittstelle antworten die Endpunkte mit `403`.
+Authenticate via header `X-API-Key` (or `Authorization: Bearer …` or `?api_key=`).
 
 ```yaml
 rest_command:
@@ -218,121 +211,86 @@ rest_command:
     headers:
       X-API-Key: !secret scan_deck_key
       Content-Type: "application/json"
-    payload: '{"tags": ["Automatisiert"]}'
+    payload: '{"tags": ["Automated"]}'
 
 automation:
-  - alias: "Scan bei Bewegung am Schreibtisch"
+  - alias: "Scan on desk motion"
     trigger:
       - platform: state
-        entity_id: binary_sensor.schreibtisch_bewegung
+        entity_id: binary_sensor.desk_motion
         to: "on"
     action:
       - service: rest_command.scan_deck_scan
 ```
 
-Damit lässt sich auch ein Stapel ohne Handy bedienen: ein Taster startet den Stapel, jeder weitere Druck scannt eine Seite, langes Drücken schließt ab.
+Webhook callbacks back to Home Assistant can also be configured under *Webhook callback to Home Assistant* (`status`, `file`, `error`, `trigger`).
 
-Als Auslöser eignet sich alles, was Home Assistant kennt: Bewegungsmelder, Zigbee-Taster, NFC-Tag, Sprachbefehl oder ein Zeitplan. Zusätzlich lässt sich unter *Webhook zurück an Home Assistant* eine URL hinterlegen — dorthin meldet Scan Deck nach jedem Scan `status`, `file`, `error` und `trigger`, sodass HA auf das Ergebnis reagieren kann.
+## Paperless-ngx Upload
 
-## Paperless-ngx-Upload
+### Performance
 
-### Geschwindigkeit
+A scan involves three requests: query status, create scan job, download document. ScanDeck keeps the HTTPS connection alive, eliminating redundant TLS handshakes.
 
-Ein Scan besteht aus drei Anfragen an den Scanner: Status abfragen, Auftrag anlegen, Dokument abholen. ScanDeck hält die HTTPS-Verbindung dazwischen offen, statt sie dreimal neu aufzubauen — der TLS-Handshake fällt damit nur einmal an, und Drucker-Firmware ist beim Verschlüsseln meist ziemlich langsam. Wie lange ein Scan gebraucht hat, steht im Live-Protokoll hinter dem Dateinamen.
+ScanDeck measures scan times per profile and records them in `./data/timings.json` to calculate accurate progress bar ramps and time remaining estimates.
 
-ScanDeck merkt sich außerdem, wie lange dein Gerät für jede Kombination aus Quelle, Auflösung, Farbmodus und Format braucht, und speichert das in `./data/timings.json`. Ab dem zweiten Scan eines Profils läuft der Fortschrittsbalken deshalb in echter Zeit statt geschätzt, und die Anzeige nennt die verbleibenden Sekunden. Gemessen wird gleitend, langsame Ausreißer verziehen den Wert also nicht dauerhaft; dauert ein Scan länger als erwartet, kriecht der Balken weiter, statt stehen zu bleiben. Die Datei kann jederzeit gelöscht werden, dann lernt ScanDeck neu.
+### Searchable PDFs (OCR)
 
-Der Rest der Wartezeit ist der Scanner selbst: Lampe aufwärmen, Schlitten fahren, Bild übertragen. Gegen den Schlafmodus hilft die Option *Scanner beim Öffnen der App aufwecken*: ScanDeck fragt dann im Hintergrund einmal den Gerätestatus ab, sobald du die App öffnest oder zu ihr zurückkehrst. Während du noch Tags tippst, ist das Gerät schon wach.
+ScanDeck generates image-only PDFs from the scanner. Optical character recognition (OCR) is handled by Paperless-ngx during ingestion via OCRmyPDF/Tesseract.
 
-Zwei weitere Stellschrauben helfen spürbar:
-
-- **Auflösung** — 600 dpi dauert grob viermal so lange wie 300 dpi und bringt bei normalem Papier nichts. Für Briefe reichen 200–300 dpi.
-- **Farbmodus** — Graustufen überträgt ein Drittel der Daten von Farbe.
-
-Manche Geräte bieten eSCL zusätzlich unverschlüsselt auf Port 80 an (`http://scanner-ip:80` statt `https://scanner-ip:443`). Das spart den Handshake ganz. Im eigenen LAN ist das vertretbar; über Netzgrenzen hinweg bleib bei HTTPS.
-
-### Durchsuchbare PDFs (OCR)
-
-ScanDeck macht **kein** OCR. Der Scanner liefert ein reines Bild-PDF, und genau das wird abgelegt und hochgeladen. Die Texterkennung übernimmt Paperless-ngx beim Import mit OCRmyPDF/Tesseract — dort entsteht das durchsuchbare Dokument. Die Datei in `./scans` bleibt dagegen immer ein Bild-PDF.
-
-Wichtig ist dabei die Sprache: Paperless-ngx erkennt standardmäßig **Englisch**. Für deutsche Dokumente gehört in dessen Compose-Datei:
+Configure your desired OCR languages in your Paperless-ngx compose file:
 
 ```yaml
 environment:
-  PAPERLESS_OCR_LANGUAGE: deu
-  PAPERLESS_OCR_LANGUAGES: deu eng
+  PAPERLESS_OCR_LANGUAGE: eng
+  PAPERLESS_OCR_LANGUAGES: eng deu
 ```
 
-`PAPERLESS_OCR_LANGUAGE` ist die Sprache, mit der erkannt wird; `PAPERLESS_OCR_LANGUAGES` bestimmt, welche Sprachpakete überhaupt installiert werden. Ohne das zweite fehlt Tesseract das deutsche Modell. Ab Paperless-ngx 2.x lässt sich die Sprache alternativ in dessen Oberfläche unter *Einstellungen → Konfiguration* setzen; ist sie dort leer, gilt die Umgebungsvariable.
+### Upload API
 
-Kontrollieren lässt sich das an einem importierten Dokument: Enthält der Textinhalt in Paperless deutsche Umlaute statt Zeichensalat, passt die Sprache.
+Uploads use `POST /api/documents/post_document/` with token authentication. Missing tags are created automatically if configured. See [Paperless-ngx API Documentation](https://docs.paperless-ngx.com/api/).
 
-### Upload
+## Versioning
 
-Der Upload verwendet `POST /api/documents/post_document/` mit Token-Authentifizierung. Standard-Tags werden über ihre Namen in Paperless-IDs aufgelöst; optional legt die App fehlende Tags selbst an. Paperless verarbeitet das Dokument anschließend asynchron. Siehe die [Paperless-ngx API-Dokumentation](https://docs.paperless-ngx.com/api/).
+ScanDeck adheres to [Semantic Versioning](https://semver.org/). The current version is tracked in `VERSION` and documented in [CHANGELOG.md](CHANGELOG.md).
 
-## Versionierung
+## Development
 
-ScanDeck folgt [Semantic Versioning](https://semver.org/lang/de/). Die maßgebliche Versionsnummer steht in der Datei `VERSION`; von dort liest sie die Anwendung ein und zeigt sie dezent neben dem Logo an. Alle Änderungen stehen im [CHANGELOG](CHANGELOG.md).
+The codebase is structured in two layers: [`app.py`](app.py) handles the web server, application state, and background queues; standalone components live in [`scandeck/`](scandeck/).
 
-Die App sieht einmal beim Start und danach alle sechs Stunden bei GitHub nach, ob es ein neueres Release gibt. Falls ja, färbt sich die Versionsanzeige neben dem Logo amber und bekommt einen kleinen Pfeil — ein Tipp darauf öffnet die Release-Seite. Unter *Einstellungen → Version* lässt sich sofort prüfen oder die Abfrage ganz abschalten; sie geht ausschließlich an `api.github.com` und sendet nichts über deine Installation.
-
-Für eine neue Version: `VERSION` anheben, den Changelog ergänzen, committen und taggen. Der Workflow [`docker-publish.yml`](.github/workflows/docker-publish.yml) führt die Tests aus, baut daraufhin das Image für amd64 und arm64 und veröffentlicht es unter der neuen Versionsnummer — er bricht ab, wenn die Tests fehlschlagen oder Tag und `VERSION` nicht zusammenpassen.
-
-```powershell
-git tag -a v1.0.1 -m "ScanDeck 1.0.1"
-git push origin main --tags
-```
-
-## Mitentwickeln
-
-Der Code liegt in zwei Ebenen: [`app.py`](app.py) hält die HTTP-Oberfläche, den Laufzeitzustand und die Hintergrundschleife; alles, was für sich allein Sinn ergibt, steht im Paket [`scandeck/`](scandeck/).
-
-| Modul | Zuständig für |
+| Module | Responsibility |
 | --- | --- |
-| [`config.py`](scandeck/config.py) | Was gespeichert werden darf, Prüfung, `config.json` |
-| [`escl.py`](scandeck/escl.py) | Gespräch mit dem Scanner: Fähigkeiten, Status, Scanauftrag |
-| [`network.py`](scandeck/network.py) | Welche Netze und Ports nach einem Scanner abgesucht werden |
-| [`documents.py`](scandeck/documents.py) | Vorschau, Seiten trennen, Seiten zusammenführen |
-| [`batch.py`](scandeck/batch.py) | Der gesammelte Stapel und seine Reihenfolge |
-| [`jobs.py`](scandeck/jobs.py) | Upload-Warteschlange und gemessene Scandauern |
-| [`paperless.py`](scandeck/paperless.py) | Upload und Rückmeldung von Paperless-ngx |
-| [`events.py`](scandeck/events.py) | Live-Protokoll und Fortschritt für alle Oberflächen |
-| [`updates.py`](scandeck/updates.py) | Versionsabgleich mit GitHub |
+| [`config.py`](scandeck/config.py) | Config validation, defaults, persistence in `config.json` |
+| [`escl.py`](scandeck/escl.py) | Scanner communication: capabilities, status, scan jobs |
+| [`network.py`](scandeck/network.py) | Subnet probing and scanner discovery |
+| [`documents.py`](scandeck/documents.py) | Previews, page splitting, PDF merging |
+| [`batch.py`](scandeck/batch.py) | Batch collection and ordering |
+| [`jobs.py`](scandeck/jobs.py) | Upload queue and duration timings |
+| [`paperless.py`](scandeck/paperless.py) | Paperless-ngx integration and task polling |
+| [`events.py`](scandeck/events.py) | Real-time event log and progress broadcast |
+| [`updates.py`](scandeck/updates.py) | GitHub release checking |
 
-Tests laufen ohne Gerät und ohne Netz — der Scanner wird nachgebildet:
+Unit tests mock the scanner and run offline without hardware:
 
 ```bash
 pip install -r requirements-dev.txt
 pytest -q
 ```
 
-## Lizenz
+## License
 
 [MIT](LICENSE)
 
-## Zugriffsschutz
+## Access Protection
 
-Standardmäßig ist die Oberfläche offen — ScanDeck ist für das eigene Netz gedacht, und ein Passwort vor dem Scan-Knopf stört dort öfter, als es nützt.
+By default, the interface is open for trusted local networks.
 
-Unter *Einstellungen → Zugriffsschutz* lässt sich ein Passwort vergeben (mindestens 8 Zeichen). Danach verlangt **die gesamte Oberfläche und jeder API-Endpunkt** eine Anmeldung. Sinnvoll, wenn Gäste im WLAN sind, mehrere Haushalte am selben Netz hängen oder ScanDeck hinter einem Reverse Proxy steht.
+Under *Settings → Access protection*, set a password (min. 8 characters) to require authentication for all UI and API endpoints.
 
-Was dabei bewusst offen bleibt:
+Endpoints left unauthenticated:
+- `/health` — container health checks.
+- Static assets and web app shell for login screen.
+- Home Assistant endpoints (`/api/ha/*`) which use the independent API key.
 
-- `/health` — der Container prüft sich damit selbst; mit Passwort würde er sich als ungesund melden.
-- Die Startseite samt Stylesheet und Skript, sonst ließe sich die Anmeldemaske nicht anzeigen.
-- Die Endpunkte `/api/ha/scan`, `/api/ha/state`, `/api/ha/batch` und `/api/ha/test` — sie weisen sich mit dem **Home-Assistant-API-Key** aus. Bestehende Automatisierungen laufen also weiter, ohne dass du etwas anpasst. Der Key selbst (`/api/ha/key`) ist mit eingeschaltetem Schutz nur noch angemeldet lesbar.
+## Security Notice
 
-Weiteres zum Verhalten:
-
-- Das Gerät, das den Schutz einschaltet, bleibt angemeldet — man sperrt sich nicht selbst aus.
-- Das Passwort liegt nur als Hash in `config.json`, niemals im Klartext, und wird nie über die API herausgegeben.
-- Ein **Passwortwechsel meldet alle anderen Geräte ab**; genau dafür wechselt man es.
-- Zehn Fehlversuche hintereinander sperren die Anmeldung für fünf Minuten.
-- Die Sitzung gilt 30 Tage und übersteht einen Neustart des Containers.
-
-Kein Passwort mehr? Dann in `data/config.json` `"auth_enabled": false` setzen und den Container neu starten.
-
-## Sicherheitsnotiz
-
-Ohne eingeschalteten Zugriffsschutz hat die Anwendung keine Benutzeranmeldung — der Home-Assistant-API-Key schützt dann nur die `/api/ha/*`-Endpunkte, nicht die Oberfläche. Stelle den Port `8080` in keinem Fall ungeschützt ins Internet; der Zugriffsschutz ist als Schranke im eigenen Netz gedacht, nicht als Härtung gegen das offene Netz. Paperless-Token und API-Key liegen im persistenten Volume im Klartext; schütze daher den Ordner `data` und sichere ihn nicht unbedacht in öffentliche Repositories.
+When access protection is disabled, the application does not require user authentication — Home Assistant API keys only protect `/api/ha/*`. Never expose port `8080` directly to the public internet without proper authentication and reverse proxy protection. Secrets in `./data` are stored in plaintext on disk; ensure persistent volumes are kept secure.

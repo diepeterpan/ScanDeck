@@ -55,7 +55,7 @@ def check_password_rules(password: str) -> str:
     """Return the password to store, or raise ValueError with the reason."""
     password = str(password or "")
     if len(password.strip()) < MIN_PASSWORD_LENGTH:
-        raise ValueError(f"Das Passwort braucht mindestens {MIN_PASSWORD_LENGTH} Zeichen.")
+        raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters.")
     return password
 
 

@@ -207,7 +207,7 @@ def test_the_sheet_lists_every_source_in_readable_units(client, deck, monkeypatc
     deck.store.patch(scanner_url="https://10.0.0.31:443")
 
     sheet = {entry["source"]: entry for entry in client.get("/api/scanner/capabilities").get_json()["sheet"]}
-    assert sheet["Platen"]["label"] == "Vorlagenglas"
+    assert sheet["Platen"]["label"] == "Flatbed"
     assert sheet["Platen"]["area_mm"] == [216, 297]  # A4 fits, Legal does not
     assert sheet["Feeder"]["area_mm"] == [216, 356]
 

@@ -1,7 +1,6 @@
 #!/bin/sh
-# Startet als root, richtet die Volumes ein und gibt die Rechte danach ab.
-# So funktioniert ein frischer Bind-Mount (der dem Host-root gehoert), ohne dass
-# jemand vorher von Hand chownen muss.
+# Starts as root, sets up volumes and drops privileges afterwards.
+# This ensures bind mounts owned by host root work without manual chown.
 set -e
 
 PUID="${PUID:-10001}"
@@ -10,8 +9,8 @@ DATA_DIR="${APP_DATA_DIR:-/data}"
 OUT_DIR="${SCAN_OUTPUT_DIR:-/scans}"
 
 if [ "$(id -u)" != "0" ]; then
-    # Bereits unprivilegiert gestartet (z. B. per "user:" in Compose):
-    # nichts anzupassen, direkt weiter.
+    # Already started unprivileged (e.g. via "user:" in Compose):
+    # nothing to adjust, continue directly.
     exec "$@"
 fi
 
@@ -25,16 +24,16 @@ fi
 for dir in "$DATA_DIR" "$OUT_DIR"; do
     mkdir -p "$dir" 2>/dev/null || true
     if [ ! -d "$dir" ]; then
-        echo "ScanDeck: $dir konnte nicht angelegt werden." >&2
+        echo "ScanDeck: $dir could not be created." >&2
         continue
     fi
-    # Nur anfassen, was noch nicht passt: spart Zeit bei vielen Scans.
+    # Only touch permissions if needed: saves time with many scans.
     if [ "$(stat -c %u "$dir")" != "$PUID" ] || [ "$(stat -c %g "$dir")" != "$PGID" ]; then
         chown -R "$PUID:$PGID" "$dir" 2>/dev/null \
-            || echo "ScanDeck: Besitzer von $dir liess sich nicht setzen; bitte Rechte auf dem Host pruefen." >&2
+            || echo "ScanDeck: Failed to set owner for $dir; please check permissions on host." >&2
     fi
     if ! su scanner -s /bin/sh -c "test -w '$dir'"; then
-        echo "ScanDeck: $dir ist fuer den Dienst nicht beschreibbar (UID $PUID)." >&2
+        echo "ScanDeck: $dir is not writable by the service (UID $PUID)." >&2
     fi
 done
 

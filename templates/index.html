@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -19,7 +19,7 @@
     <div class="ambient" aria-hidden="true"><span></span><span></span></div>
 
     <!-- ───────────────────────── Setup wizard ───────────────────────── -->
-    <div id="wizard" class="wizard" hidden aria-modal="true" role="dialog" aria-label="Einrichtung">
+    <div id="wizard" class="wizard" hidden aria-modal="true" role="dialog" aria-label="Setup">
       <div class="wizard-shell">
         <header class="wizard-head">
           <div class="wizard-brand"><span class="logo-mark"></span> Scan Deck</div>
@@ -28,50 +28,50 @@
 
         <div class="wizard-track" id="wizard-track">
           <section class="wizard-step" data-step="0">
-            <span class="step-kicker">Willkommen</span>
-            <h2>Einmal einrichten,<br>dann nur noch scannen.</h2>
-            <p class="step-text">Es ist noch keine Konfiguration hinterlegt. Der Assistent fragt in vier kurzen Schritten alles ab: Scanner, Paperless-ngx, Format und Automatisierung.</p>
+            <span class="step-kicker">Welcome</span>
+            <h2>Set up once,<br>then just scan.</h2>
+            <p class="step-text">No configuration found. The wizard guides you through four quick steps: Scanner, Paperless-ngx, format and automation.</p>
             <ul class="step-list">
-              <li><b>1</b> Scanner finden oder eintragen</li>
-              <li><b>2</b> Paperless-ngx verbinden</li>
-              <li><b>3</b> Format &amp; Tags festlegen</li>
+              <li><b>1</b> Discover or enter scanner</li>
+              <li><b>2</b> Connect Paperless-ngx</li>
+              <li><b>3</b> Configure format &amp; tags</li>
               <li><b>4</b> Home Assistant (optional)</li>
             </ul>
           </section>
 
           <section class="wizard-step" data-step="1">
-            <span class="step-kicker">Schritt 1 · Scanner</span>
-            <h2>Welchen Scanner nutzt du?</h2>
-            <p class="step-text">Die Suche findet dein Netzwerk selbst heraus und klappert es nach eSCL-fähigen Geräten ab. Das dauert einen Moment.</p>
-            <button id="wiz-discover" class="btn primary wide" type="button">Netzwerk automatisch durchsuchen</button>
+            <span class="step-kicker">Step 1 · Scanner</span>
+            <h2>Which scanner do you use?</h2>
+            <p class="step-text">Discovery detects your local network and probes for eSCL-compatible devices. This will take a moment.</p>
+            <button id="wiz-discover" class="btn primary wide" type="button">Search network automatically</button>
             <div id="wiz-devices" class="device-list" aria-live="polite"></div>
             <details class="manual-net">
-              <summary>Netzwerk manuell angeben <span class="chev" aria-hidden="true"></span></summary>
+              <summary>Specify network manually <span class="chev" aria-hidden="true"></span></summary>
               <div class="field-row">
-                <label class="field"><span>Netzwerk</span><input id="wiz-subnet" type="text" inputmode="text" spellcheck="false" placeholder="192.168.1.0/24"></label>
-                <button id="wiz-discover-manual" class="btn ghost" type="button">Suchen</button>
+                <label class="field"><span>Network</span><input id="wiz-subnet" type="text" inputmode="text" spellcheck="false" placeholder="192.168.1.0/24"></label>
+                <button id="wiz-discover-manual" class="btn ghost" type="button">Search</button>
               </div>
             </details>
             <label class="field"><span>eSCL Endpoint</span><input id="wiz-scanner-url" type="url" inputmode="url" spellcheck="false" placeholder="https://192.168.1.50:443"></label>
-            <label class="switch"><input id="wiz-verify-ssl" type="checkbox"><i></i><span>TLS-Zertifikat prüfen</span></label>
-            <button id="wiz-test-scanner" class="btn ghost wide" type="button">Verbindung testen</button>
+            <label class="switch"><input id="wiz-verify-ssl" type="checkbox"><i></i><span>Verify TLS certificate</span></label>
+            <button id="wiz-test-scanner" class="btn ghost wide" type="button">Test connection</button>
           </section>
 
           <section class="wizard-step" data-step="2">
-            <span class="step-kicker">Schritt 2 · Paperless-ngx</span>
-            <h2>Wohin sollen die Scans?</h2>
-            <p class="step-text">Optional. Ohne Paperless-ngx werden die Scans nur im Ablageordner gespeichert.</p>
-            <label class="switch"><input id="wiz-upload" type="checkbox"><i></i><span>Automatisch nach Paperless-ngx hochladen</span></label>
+            <span class="step-kicker">Step 2 · Paperless-ngx</span>
+            <h2>Where should scans go?</h2>
+            <p class="step-text">Optional. Without Paperless-ngx, scans are only saved to the output directory.</p>
+            <label class="switch"><input id="wiz-upload" type="checkbox"><i></i><span>Upload automatically to Paperless-ngx</span></label>
             <div id="wiz-paperless-fields" class="stack">
               <label class="field"><span>Paperless URL</span><input id="wiz-paperless-url" type="url" inputmode="url" spellcheck="false" placeholder="https://paperless.example.de"></label>
-              <label class="field"><span>API Token</span><input id="wiz-paperless-token" type="password" autocomplete="off" placeholder="Token aus dem Paperless-Profil"></label>
-              <button id="wiz-test-paperless" class="btn ghost wide" type="button">Verbindung testen</button>
+              <label class="field"><span>API Token</span><input id="wiz-paperless-token" type="password" autocomplete="off" placeholder="Token from Paperless user profile"></label>
+              <button id="wiz-test-paperless" class="btn ghost wide" type="button">Test connection</button>
             </div>
           </section>
 
           <section class="wizard-step" data-step="3">
-            <span class="step-kicker">Schritt 3 · Ausgabe</span>
-            <h2>Wie sollen Scans aussehen?</h2>
+            <span class="step-kicker">Step 3 · Output</span>
+            <h2>How should scans look?</h2>
             <div class="seg-group">
               <span class="seg-label">Format</span>
               <div class="seg" data-target="wiz-format">
@@ -80,7 +80,7 @@
               </div>
             </div>
             <div class="seg-group">
-              <span class="seg-label">Auflösung</span>
+              <span class="seg-label">Resolution</span>
               <div class="seg" data-target="wiz-resolution">
                 <button type="button" data-value="150">150</button>
                 <button type="button" data-value="300" class="active">300</button>
@@ -88,36 +88,36 @@
               </div>
             </div>
             <div class="seg-group">
-              <span class="seg-label">Farbe</span>
+              <span class="seg-label">Color</span>
               <div class="seg" data-target="wiz-color">
-                <button type="button" data-value="RGB24" class="active">Farbe</button>
-                <button type="button" data-value="Grayscale8">Grau</button>
+                <button type="button" data-value="RGB24" class="active">Color</button>
+                <button type="button" data-value="Grayscale8">Grey</button>
               </div>
             </div>
-            <label class="field"><span>Ablageordner im Container</span><input id="wiz-output-dir" type="text" spellcheck="false" placeholder="/scans"></label>
-            <label class="field"><span>Titel-Präfix</span><input id="wiz-title-prefix" type="text" placeholder="Scan"></label>
+            <label class="field"><span>Output directory in container</span><input id="wiz-output-dir" type="text" spellcheck="false" placeholder="/scans"></label>
+            <label class="field"><span>Title prefix</span><input id="wiz-title-prefix" type="text" placeholder="Scan"></label>
             <div class="tag-editor">
-              <span class="field-label">Standard-Tags</span>
+              <span class="field-label">Default tags</span>
               <div id="wiz-tag-list" class="chips"></div>
-              <div class="chip-input"><input id="wiz-tag-input" type="text" placeholder="Tag hinzufügen"><button id="wiz-tag-add" type="button" aria-label="Tag hinzufügen">+</button></div>
+              <div class="chip-input"><input id="wiz-tag-input" type="text" placeholder="Add tag"><button id="wiz-tag-add" type="button" aria-label="Add tag">+</button></div>
             </div>
           </section>
 
           <section class="wizard-step" data-step="4">
-            <span class="step-kicker">Schritt 4 · Automatisierung</span>
-            <h2>Home Assistant anbinden?</h2>
-            <p class="step-text">Aktiviert eine geschützte REST-Schnittstelle. Damit kann ein Bewegungsmelder, ein Taster oder jede andere Automatisierung einen Scan auslösen.</p>
-            <label class="switch"><input id="wiz-ha" type="checkbox"><i></i><span>Schnittstelle aktivieren</span></label>
+            <span class="step-kicker">Step 4 · Automation</span>
+            <h2>Connect Home Assistant?</h2>
+            <p class="step-text">Enables a secured REST interface. This allows motion sensors, buttons, or any other automation to trigger a scan.</p>
+            <label class="switch"><input id="wiz-ha" type="checkbox"><i></i><span>Enable interface</span></label>
             <div id="wiz-ha-fields" class="stack">
-              <label class="field"><span>API-Key</span><span class="copy-field"><input id="wiz-ha-key" type="text" readonly spellcheck="false" placeholder="wird erzeugt"><button id="wiz-ha-copy" type="button" class="btn tiny">Kopieren</button></span></label>
-              <p class="hint">Der Key wird lokal erzeugt und nur in <code>config.json</code> gespeichert. Die fertige YAML-Konfiguration findest du später unter Einstellungen → Home Assistant.</p>
+              <label class="field"><span>API-Key</span><span class="copy-field"><input id="wiz-ha-key" type="text" readonly spellcheck="false" placeholder="generated on save"><button id="wiz-ha-copy" type="button" class="btn tiny">Copy</button></span></label>
+              <p class="hint">The key is generated locally and stored only in <code>config.json</code>. You can find the full YAML configuration later under Settings → Home Assistant.</p>
             </div>
           </section>
         </div>
 
         <footer class="wizard-foot">
-          <button id="wiz-back" class="btn ghost" type="button">Zurück</button>
-          <button id="wiz-next" class="btn primary" type="button">Los geht's</button>
+          <button id="wiz-back" class="btn ghost" type="button">Back</button>
+          <button id="wiz-next" class="btn primary" type="button">Get started</button>
         </footer>
       </div>
     </div>
@@ -132,7 +132,7 @@
           <span id="version-chip-text">—</span>
         </a>
       </div>
-      <div id="status-pill" class="status-pill ready"><i></i><span id="status-text">Bereit</span></div>
+      <div id="status-pill" class="status-pill ready"><i></i><span id="status-text">Ready</span></div>
     </header>
 
     <main id="app-main">
@@ -140,7 +140,7 @@
       <section id="view-dashboard" class="view active" aria-label="Dashboard">
         <div class="scan-hero">
           <div class="hero-glow" aria-hidden="true"></div>
-          <button id="scan-button" class="scan-orb" type="button" aria-label="Scan starten">
+          <button id="scan-button" class="scan-orb" type="button" aria-label="Start scan">
             <svg class="orb-ring" viewBox="0 0 200 200" aria-hidden="true">
               <circle class="orb-track" cx="100" cy="100" r="92"></circle>
               <circle id="orb-progress" class="orb-bar" cx="100" cy="100" r="92"></circle>
@@ -150,8 +150,8 @@
                 <path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/>
                 <path class="orb-beam" d="M3.5 12h17"/>
               </svg>
-              <strong id="orb-label">Scan starten</strong>
-              <small id="orb-sub">Flachbett · PDF · 300 dpi</small>
+              <strong id="orb-label">Start scan</strong>
+              <small id="orb-sub">Flatbed · PDF · 300 dpi</small>
             </span>
           </button>
         </div>
@@ -159,109 +159,109 @@
         <div class="batch-bar">
           <label class="switch batch-switch">
             <input id="batch-toggle" type="checkbox"><i></i>
-            <span>Stapel <small>mehrere Seiten in eine PDF</small></span>
+            <span>Batch <small>multiple pages into one PDF</small></span>
           </label>
           <span id="batch-count" class="batch-count" hidden>0</span>
         </div>
 
         <section id="batch-panel" class="card batch-panel" hidden>
           <div class="card-head">
-            <h2>Seiten im Stapel <button id="batch-help-toggle" class="help-dot" type="button" aria-label="Wie funktioniert der Stapel?" aria-expanded="false">?</button></h2>
-            <span id="batch-hint" class="batch-hint">Scanne die erste Seite</span>
+            <h2>Pages in batch <button id="batch-help-toggle" class="help-dot" type="button" aria-label="How does batch scanning work?" aria-expanded="false">?</button></h2>
+            <span id="batch-hint" class="batch-hint">Scan the first page</span>
           </div>
 
           <div id="batch-help" class="batch-help" hidden>
-            <p>Jeder Scan wird als Seite gesammelt statt sofort hochgeladen. Am Ende entsteht daraus <b>ein</b> PDF.</p>
+            <p>Each scan is collected as a page instead of being uploaded immediately. In the end, they merge into <b>one</b> PDF.</p>
             <ul>
-              <li><span class="help-icon">⠿</span> <b>Ziehen</b> — Seite gedrückt halten und an die richtige Stelle schieben.</li>
-              <li><span class="help-icon">↻</span> <b>Drehen</b> — dreht die Seite um 90°, so wie sie später im PDF liegt.</li>
-              <li><span class="help-icon">⟳</span> <b>Neu scannen</b> — der nächste Scan ersetzt genau diese Seite.</li>
-              <li><span class="help-icon">×</span> <b>Entfernen</b> — wirft die Seite aus dem Stapel.</li>
-              <li><span class="help-icon">🔍</span> <b>Antippen</b> — zeigt die Seite groß, mit Pfeilen zum Blättern.</li>
+              <li><span class="help-icon">⠿</span> <b>Drag</b> — hold and drag a page to reorder.</li>
+              <li><span class="help-icon">↻</span> <b>Rotate</b> — rotates the page by 90° for the final PDF.</li>
+              <li><span class="help-icon">⟳</span> <b>Rescan</b> — the next scan replaces this specific page.</li>
+              <li><span class="help-icon">×</span> <b>Remove</b> — removes this page from the batch.</li>
+              <li><span class="help-icon">🔍</span> <b>Tap</b> — shows full-size view with navigation arrows.</li>
             </ul>
-            <p>Kommt der Stapel aus dem Einzug kopfüber oder rückwärts an, richten <b>Alle drehen</b> und <b>Reihenfolge umkehren</b> ihn in einem Zug.</p>
-            <p><b>Als PDF ablegen</b> führt alles zusammen und schickt es an Paperless. <b>Verwerfen</b> löscht den Stapel.</p>
+            <p>If a feeder stack comes out upside down or reversed, <b>Rotate all</b> and <b>Reverse order</b> fix it in one tap.</p>
+            <p><b>Save as PDF</b> merges everything and sends it to Paperless. <b>Discard</b> clears the batch.</p>
           </div>
 
           <div id="batch-pages" class="batch-pages"></div>
           <div id="batch-bulk" class="batch-bulk" hidden>
-            <button id="batch-rotate-all" class="btn tiny ghost" type="button">Alle drehen</button>
-            <button id="batch-reverse" class="btn tiny ghost" type="button">Reihenfolge umkehren</button>
+            <button id="batch-rotate-all" class="btn tiny ghost" type="button">Rotate all</button>
+            <button id="batch-reverse" class="btn tiny ghost" type="button">Reverse order</button>
           </div>
           <div class="batch-actions">
-            <button id="batch-cancel" class="btn ghost" type="button">Verwerfen</button>
-            <button id="batch-finish" class="btn primary" type="button" disabled>Als PDF ablegen</button>
+            <button id="batch-cancel" class="btn ghost" type="button">Discard</button>
+            <button id="batch-finish" class="btn primary" type="button" disabled>Save as PDF</button>
           </div>
         </section>
 
         <div class="quick-row" role="group" aria-label="Scanprofil">
-          <button class="quick" data-quick="source" type="button"><span>Quelle</span><b id="quick-source">Flachbett</b></button>
+          <button class="quick" data-quick="source" type="button"><span>Source</span><b id="quick-source">Flatbed</b></button>
           <button class="quick" data-quick="output_format" type="button"><span>Format</span><b id="quick-format">PDF</b></button>
           <button class="quick" data-quick="resolution" type="button"><span>DPI</span><b id="quick-resolution">300</b></button>
-          <button class="quick" data-quick="color_mode" type="button"><span>Farbe</span><b id="quick-color">Farbe</b></button>
+          <button class="quick" data-quick="color_mode" type="button"><span>Color</span><b id="quick-color">Color</b></button>
         </div>
         <p id="feeder-state" class="feeder-chip" hidden role="status"></p>
         <div id="profile-row" class="profile-row" role="group" aria-label="Profile" hidden></div>
 
         <section id="metadata-card" class="card" hidden>
-          <div class="card-head"><h2>Ablage in Paperless</h2><button id="metadata-reload" class="btn tiny ghost" type="button">Neu laden</button></div>
-          <label class="field"><span>Korrespondent</span>
-            <select id="correspondent"><option value="">— nicht setzen —</option></select>
+          <div class="card-head"><h2>Paperless metadata</h2><button id="metadata-reload" class="btn tiny ghost" type="button">Reload</button></div>
+          <label class="field"><span>Correspondent</span>
+            <select id="correspondent"><option value="">— do not set —</option></select>
           </label>
-          <label class="field"><span>Dokumenttyp</span>
-            <select id="document-type"><option value="">— nicht setzen —</option></select>
+          <label class="field"><span>Document type</span>
+            <select id="document-type"><option value="">— do not set —</option></select>
           </label>
-          <p class="hint">Gilt für den nächsten Scan und wird nicht dauerhaft gespeichert.</p>
+          <p class="hint">Applies to the next scan only and is not saved permanently.</p>
         </section>
 
         <section class="card">
-          <div class="card-head"><h2>Tags für diesen Scan</h2></div>
+          <div class="card-head"><h2>Tags for this scan</h2></div>
           <div id="quick-tags" class="chips quick-tags" hidden></div>
           <div id="session-tag-list" class="chips"></div>
-          <div class="chip-input"><input id="session-tag-input" type="text" placeholder="z. B. Rechnung"><button id="session-tag-add" type="button" aria-label="Tag hinzufügen">+</button></div>
+          <div class="chip-input"><input id="session-tag-input" type="text" placeholder="e.g. Invoice"><button id="session-tag-add" type="button" aria-label="Add tag">+</button></div>
           <p class="hint" id="default-tags-hint"></p>
         </section>
 
         <div class="tile-grid">
-          <div class="tile" id="tile-scanner"><span class="tile-label">Scanner</span><b id="tile-scanner-value">—</b><span class="tile-sub" id="tile-scanner-sub">nicht konfiguriert</span></div>
-          <div class="tile" id="tile-paperless"><span class="tile-label">Paperless</span><b id="tile-paperless-value">—</b><span class="tile-sub" id="tile-paperless-sub">inaktiv</span></div>
-          <div class="tile" id="tile-last"><span class="tile-label">Letzter Scan</span><b id="tile-last-value">—</b><span class="tile-sub" id="tile-last-sub">noch keiner</span></div>
-          <div class="tile" id="tile-ha"><span class="tile-label">Home Assistant</span><b id="tile-ha-value">Aus</b><span class="tile-sub" id="tile-ha-sub">keine Automatisierung</span></div>
+          <div class="tile" id="tile-scanner"><span class="tile-label">Scanner</span><b id="tile-scanner-value">—</b><span class="tile-sub" id="tile-scanner-sub">not configured</span></div>
+          <div class="tile" id="tile-paperless"><span class="tile-label">Paperless</span><b id="tile-paperless-value">—</b><span class="tile-sub" id="tile-paperless-sub">inactive</span></div>
+          <div class="tile" id="tile-last"><span class="tile-label">Last scan</span><b id="tile-last-value">—</b><span class="tile-sub" id="tile-last-sub">none yet</span></div>
+          <div class="tile" id="tile-ha"><span class="tile-label">Home Assistant</span><b id="tile-ha-value">Off</b><span class="tile-sub" id="tile-ha-sub">no automation</span></div>
         </div>
 
         <section class="card">
-          <button class="card-head toggle" id="log-toggle" type="button" aria-expanded="false"><h2>Live-Protokoll</h2><span class="chev" aria-hidden="true"></span></button>
-          <div id="log-lines" class="log" hidden><p class="log-empty">Noch keine Ereignisse</p></div>
+          <button class="card-head toggle" id="log-toggle" type="button" aria-expanded="false"><h2>Live log</h2><span class="chev" aria-hidden="true"></span></button>
+          <div id="log-lines" class="log" hidden><p class="log-empty">No events yet</p></div>
         </section>
       </section>
 
       <!-- Verlauf -->
-      <section id="view-history" class="view" aria-label="Verlauf">
-        <div class="view-head"><h1>Verlauf</h1><button id="history-reload" class="btn tiny ghost" type="button">Aktualisieren</button></div>
-        <p class="hint" id="history-summary">Wird geladen …</p>
+      <section id="view-history" class="view" aria-label="History">
+        <div class="view-head"><h1>History</h1><button id="history-reload" class="btn tiny ghost" type="button">Refresh</button></div>
+        <p class="hint" id="history-summary">Loading …</p>
         <div id="history-list" class="history-list"></div>
       </section>
 
       <!-- Settings -->
-      <section id="view-settings" class="view" aria-label="Einstellungen">
-        <div class="view-head"><h1>Einstellungen</h1><button id="save-settings" class="btn primary" type="button">Speichern</button></div>
+      <section id="view-settings" class="view" aria-label="Settings">
+        <div class="view-head"><h1>Settings</h1><button id="save-settings" class="btn primary" type="button">Save</button></div>
 
         <section class="card">
           <div class="card-head"><h2>Scanner</h2><button id="test-scanner" class="btn tiny ghost" type="button">Test</button></div>
           <p class="hint" id="device-model" hidden>—</p>
           <div id="device-sheet" class="device-sheet"></div>
           <label class="field"><span>eSCL Endpoint</span><input id="scanner-url" type="url" inputmode="url" spellcheck="false" placeholder="https://192.168.1.50:443"></label>
-          <button id="discover-scanners" class="btn ghost wide" type="button">Netzwerk automatisch durchsuchen</button>
+          <button id="discover-scanners" class="btn ghost wide" type="button">Search network automatically</button>
           <div id="discovery-results" class="device-list" aria-live="polite"></div>
           <details class="fold">
-            <summary>Weitere Scanner-Optionen <span class="chev" aria-hidden="true"></span></summary>
+            <summary>Additional scanner options <span class="chev" aria-hidden="true"></span></summary>
             <div class="fold-body">
               <div class="field-row">
-                <label class="field"><span>Netzwerk für die Suche</span><input id="discovery-subnet" type="text" spellcheck="false" placeholder="192.168.1.0/24"></label>
-                <button id="discover-manual" class="btn ghost" type="button">Suchen</button>
+                <label class="field"><span>Discovery network</span><input id="discovery-subnet" type="text" spellcheck="false" placeholder="192.168.1.0/24"></label>
+                <button id="discover-manual" class="btn ghost" type="button">Search</button>
               </div>
-              <label class="switch"><input id="verify-scanner-ssl" type="checkbox"><i></i><span>TLS-Zertifikat prüfen</span></label>
-              <button id="device-refresh" class="btn ghost wide" type="button">Gerät neu auslesen</button>
+              <label class="switch"><input id="verify-scanner-ssl" type="checkbox"><i></i><span>Verify TLS certificate</span></label>
+              <button id="device-refresh" class="btn ghost wide" type="button">Query device again</button>
             </div>
           </details>
         </section>
@@ -270,35 +270,35 @@
           <details class="fold" id="fold-paperless">
             <summary>
               <span class="fold-title">Paperless-ngx</span>
-              <span class="fold-state" id="paperless-state">aus</span>
+              <span class="fold-state" id="paperless-state">off</span>
               <span class="chev" aria-hidden="true"></span>
             </summary>
             <div class="fold-body">
-              <label class="switch"><input id="upload-to-paperless" type="checkbox"><i></i><span>Scans automatisch hochladen</span></label>
+              <label class="switch"><input id="upload-to-paperless" type="checkbox"><i></i><span>Upload scans automatically</span></label>
               <label class="field"><span>Paperless URL</span><input id="paperless-url" type="url" inputmode="url" spellcheck="false" placeholder="https://paperless.example.de"></label>
-              <label class="field"><span>API Token</span><input id="paperless-token" type="password" autocomplete="off" placeholder="unverändert lassen"></label>
-              <label class="field"><span>Titel-Präfix</span><input id="title-prefix" type="text" placeholder="Scan"></label>
-              <button id="test-paperless" class="btn ghost wide" type="button">Verbindung testen</button>
+              <label class="field"><span>API Token</span><input id="paperless-token" type="password" autocomplete="off" placeholder="leave unchanged"></label>
+              <label class="field"><span>Title prefix</span><input id="title-prefix" type="text" placeholder="Scan"></label>
+              <button id="test-paperless" class="btn ghost wide" type="button">Test connection</button>
             </div>
           </details>
         </section>
 
         <section class="card">
-          <div class="card-head"><h2>Ausgabe</h2></div>
+          <div class="card-head"><h2>Output</h2></div>
           <div class="seg-group"><span class="seg-label">Format</span>
             <div class="seg" data-target="output-format">
               <button type="button" data-value="application/pdf">PDF</button>
               <button type="button" data-value="image/jpeg">JPEG</button>
             </div>
           </div>
-          <div class="seg-group"><span class="seg-label">Quelle</span>
+          <div class="seg-group"><span class="seg-label">Source</span>
             <div class="seg" data-target="source">
-              <button type="button" data-value="Platen">Flachbett</button>
-              <button type="button" data-value="Feeder">Einzug</button>
+              <button type="button" data-value="Platen">Flatbed</button>
+              <button type="button" data-value="Feeder">Feeder</button>
             </div>
           </div>
-          <label class="switch" id="duplex-row"><input id="duplex" type="checkbox"><i></i><span>Beidseitig einziehen</span></label>
-          <div class="seg-group"><span class="seg-label">Papier</span>
+          <label class="switch" id="duplex-row"><input id="duplex" type="checkbox"><i></i><span>Duplex scan (both sides)</span></label>
+          <div class="seg-group"><span class="seg-label">Paper</span>
             <div class="seg" data-target="paper-size">
               <button type="button" data-value="A4">A4</button>
               <button type="button" data-value="Letter">Letter</button>
@@ -306,7 +306,7 @@
               <button type="button" data-value="A5">A5</button>
             </div>
           </div>
-          <div class="seg-group"><span class="seg-label">Auflösung</span>
+          <div class="seg-group"><span class="seg-label">Resolution</span>
             <div class="seg" data-target="resolution">
               <button type="button" data-value="75">75</button>
               <button type="button" data-value="150">150</button>
@@ -316,54 +316,54 @@
               <button type="button" data-value="1200">1200</button>
             </div>
           </div>
-          <div class="seg-group"><span class="seg-label">Farbe</span>
+          <div class="seg-group"><span class="seg-label">Color</span>
             <div class="seg" data-target="color-mode">
-              <button type="button" data-value="RGB24">Farbe</button>
-              <button type="button" data-value="Grayscale8">Grau</button>
+              <button type="button" data-value="RGB24">Color</button>
+              <button type="button" data-value="Grayscale8">Grey</button>
             </div>
           </div>
-          <p class="hint" id="dpi-note" hidden>1200 dpi liefert sehr feine Scans — je nach Gerät dauert eine Seite dann mehrere Minuten. Für Papierkram reichen 300 dpi.</p>
-          <label class="field"><span>Ablageordner</span><input id="output-dir" type="text" spellcheck="false" placeholder="/scans"></label>
-          <label class="field"><span>Vorschau nach dem Scan (Sekunden)</span><input id="preview-seconds" type="number" min="0" max="60" step="1" inputmode="numeric"></label>
+          <p class="hint" id="dpi-note" hidden>1200 dpi produces very detailed scans — depending on device, a page can take several minutes. 300 dpi is plenty for documents.</p>
+          <label class="field"><span>Output directory</span><input id="output-dir" type="text" spellcheck="false" placeholder="/scans"></label>
+          <label class="field"><span>Preview duration after scan (seconds)</span><input id="preview-seconds" type="number" min="0" max="60" step="1" inputmode="numeric"></label>
         </section>
 
         <section class="card">
-          <div class="card-head"><h2>Nachbearbeitung</h2></div>
-          <label class="switch"><input id="skip-blank-pages" type="checkbox"><i></i><span>Leere Seiten überspringen</span></label>
-          <p class="hint">Beim beidseitigen Einzug sind die Rückseiten meist unbedruckt. Erkannt wird eine Seite als leer, wenn fast nichts darauf steht; im Protokoll wird jede übersprungene Seite genannt.</p>
-          <label class="switch"><input id="deskew-enabled" type="checkbox"><i></i><span>Schiefe Seiten geraderücken</span></label>
-          <p class="hint">Richtet schief eingezogene Blätter auf. Die Seite wird dafür neu aufgebaut — das kostet einen Moment, verbessert aber die Texterkennung in Paperless spürbar.</p>
+          <div class="card-head"><h2>Post-processing</h2></div>
+          <label class="switch"><input id="skip-blank-pages" type="checkbox"><i></i><span>Skip blank pages</span></label>
+          <p class="hint">Duplex scanning often feeds blank reverse sides. A page is recognized as blank when nearly empty; skipped pages are noted in the live log.</p>
+          <label class="switch"><input id="deskew-enabled" type="checkbox"><i></i><span>Deskew crooked pages</span></label>
+          <p class="hint">Straightens crooked pages. The page is re-rasterized, taking an extra moment, but noticeably improves Paperless OCR quality.</p>
         </section>
 
         <section class="card">
-          <div class="card-head"><h2>Profile</h2><button id="profile-add" class="btn tiny ghost" type="button">Hinzufügen</button></div>
-          <p class="hint">Ein Tipp statt vier Schalter: Ein Profil merkt sich Quelle, Auflösung, Farbe, Format und Tags. Auf der Startseite erscheint es als Knopf über dem Scan-Knopf.</p>
+          <div class="card-head"><h2>Profiles</h2><button id="profile-add" class="btn tiny ghost" type="button">Add</button></div>
+          <p class="hint">One tap instead of four switches: A profile stores source, resolution, color, format and tags. It appears as a button above the scan orb on the dashboard.</p>
           <div id="profile-editor" class="profile-editor"></div>
         </section>
 
         <section class="card">
           <div class="card-head"><h2>Extras</h2></div>
-          <label class="switch"><input id="metadata-enabled" type="checkbox"><i></i><span>Korrespondent und Dokumenttyp beim Scannen wählen</span></label>
-          <label class="switch"><input id="quick-tags-enabled" type="checkbox"><i></i><span>Schnell-Tags aus Paperless anbieten</span></label>
-          <label class="switch"><input id="prewarm-enabled" type="checkbox"><i></i><span>Scanner beim Öffnen der App aufwecken</span></label>
-          <label class="switch"><input id="sound-enabled" type="checkbox"><i></i><span>Ton und Vibration, wenn ein Scan fertig ist</span></label>
-          <p class="hint">Zusatzfunktionen bleiben aus, damit das Dashboard schlank bleibt.</p>
+          <label class="switch"><input id="metadata-enabled" type="checkbox"><i></i><span>Choose correspondent and document type when scanning</span></label>
+          <label class="switch"><input id="quick-tags-enabled" type="checkbox"><i></i><span>Show quick tags from Paperless</span></label>
+          <label class="switch"><input id="prewarm-enabled" type="checkbox"><i></i><span>Prewarm scanner when opening the app</span></label>
+          <label class="switch"><input id="sound-enabled" type="checkbox"><i></i><span>Sound and vibration when scan finishes</span></label>
+          <p class="hint">Optional features remain off by default to keep the dashboard lean.</p>
         </section>
 
         <section class="card">
           <details class="fold" id="fold-notify">
             <summary>
-              <span class="fold-title">Benachrichtigungen aufs Handy</span>
-              <span class="fold-state" id="push-state">aus</span>
+              <span class="fold-title">Push notifications to phone</span>
+              <span class="fold-state" id="push-state">off</span>
               <span class="chev" aria-hidden="true"></span>
             </summary>
             <div class="fold-body">
-              <p class="hint">Meldet sich, wenn Paperless ein Dokument angelegt hat — auch wenn die App geschlossen ist. Dafür muss ScanDeck über HTTPS erreichbar sein und auf dem iPhone als App auf dem Startbildschirm liegen.</p>
+              <p class="hint">Notifies you when Paperless confirms a document — even if the app is closed. Requires ScanDeck to be accessible via HTTPS and added to the home screen on iOS.</p>
               <div class="row-buttons">
-                <button id="push-enable" class="btn primary" type="button">Auf diesem Gerät aktivieren</button>
-                <button id="push-test" class="btn ghost" type="button">Testmeldung</button>
+                <button id="push-enable" class="btn primary" type="button">Enable on this device</button>
+                <button id="push-test" class="btn ghost" type="button">Test notification</button>
               </div>
-              <button id="push-disable" class="btn ghost danger wide" type="button" hidden>Für alle Geräte abschalten</button>
+              <button id="push-disable" class="btn ghost danger wide" type="button" hidden>Disable for all devices</button>
               <p class="hint" id="push-info"></p>
             </div>
           </details>
@@ -372,98 +372,98 @@
         <section class="card">
           <details class="fold" id="fold-mqtt">
             <summary>
-              <span class="fold-title">Home Assistant über MQTT</span>
-              <span class="fold-state" id="mqtt-state">aus</span>
+              <span class="fold-title">Home Assistant via MQTT</span>
+              <span class="fold-state" id="mqtt-state">off</span>
               <span class="chev" aria-hidden="true"></span>
             </summary>
             <div class="fold-body">
-              <p class="hint">Der bequeme Weg: ScanDeck erscheint in Home Assistant von selbst als Gerät — mit Knöpfen für Scan, Abbrechen und Stapel sowie Sensoren für Status, Fortschritt, Warteschlange und Einzug. Nichts in <code>configuration.yaml</code> einzutragen.</p>
-              <label class="switch"><input id="mqtt-enabled" type="checkbox"><i></i><span>MQTT verwenden</span></label>
+              <p class="hint">The easiest way: ScanDeck automatically discovers itself in Home Assistant as a device — with buttons for scan, cancel and batch, plus sensors for status, progress, queue and feeder. No manual edits in <code>configuration.yaml</code> needed.</p>
+              <label class="switch"><input id="mqtt-enabled" type="checkbox"><i></i><span>Use MQTT</span></label>
               <div class="field-row">
                 <label class="field"><span>Broker</span><input id="mqtt-host" type="text" spellcheck="false" placeholder="192.168.1.10"></label>
                 <label class="field narrow"><span>Port</span><input id="mqtt-port" type="number" min="1" max="65535" inputmode="numeric" placeholder="1883"></label>
               </div>
               <div class="field-row">
-                <label class="field"><span>Benutzer</span><input id="mqtt-user" type="text" spellcheck="false" autocomplete="off" placeholder="optional"></label>
-                <label class="field"><span>Passwort</span><input id="mqtt-password" type="password" autocomplete="off" placeholder="unverändert lassen"></label>
+                <label class="field"><span>Username</span><input id="mqtt-user" type="text" spellcheck="false" autocomplete="off" placeholder="optional"></label>
+                <label class="field"><span>Password</span><input id="mqtt-password" type="password" autocomplete="off" placeholder="leave unchanged"></label>
               </div>
-              <label class="field"><span>Gerätename in Home Assistant</span><input id="mqtt-device-name" type="text" placeholder="ScanDeck"></label>
-              <button id="mqtt-test" class="btn ghost wide" type="button">Verbinden und testen</button>
+              <label class="field"><span>Device name in Home Assistant</span><input id="mqtt-device-name" type="text" placeholder="ScanDeck"></label>
+              <button id="mqtt-test" class="btn ghost wide" type="button">Connect and test</button>
             </div>
           </details>
         </section>
 
         <section class="card">
-          <div class="card-head"><h2>Zugriffsschutz</h2></div>
-          <p class="hint">Aus, weil ScanDeck für das eigene Netz gedacht ist. Eingeschaltet verlangt die Oberfläche ein Passwort — sinnvoll, wenn Gäste im WLAN sind oder mehrere Haushalte am selben Netz hängen. Die Home-Assistant-Schnittstelle bleibt über ihren API-Key erreichbar.</p>
+          <div class="card-head"><h2>Access protection</h2></div>
+          <p class="hint">Disabled by default for local home networks. When enabled, requires a password to access the UI — useful for guest Wi-Fi or shared networks. The Home Assistant API remains accessible via API key.</p>
           <div id="auth-off">
-            <label class="field"><span>Passwort vergeben (mind. 8 Zeichen)</span><input id="auth-password" type="password" autocomplete="new-password" placeholder="••••••••"></label>
-            <label class="field"><span>Passwort wiederholen</span><input id="auth-password-repeat" type="password" autocomplete="new-password" placeholder="••••••••"></label>
-            <button id="auth-enable" class="btn primary" type="button">Zugriffsschutz einschalten</button>
+            <label class="field"><span>Set password (min. 8 characters)</span><input id="auth-password" type="password" autocomplete="new-password" placeholder="••••••••"></label>
+            <label class="field"><span>Confirm password</span><input id="auth-password-repeat" type="password" autocomplete="new-password" placeholder="••••••••"></label>
+            <button id="auth-enable" class="btn primary" type="button">Enable access protection</button>
           </div>
           <div id="auth-on" hidden>
-            <p class="hint ok">Zugriffsschutz ist aktiv.</p>
-            <label class="field"><span>Bisheriges Passwort</span><input id="auth-current" type="password" autocomplete="current-password" placeholder="••••••••"></label>
-            <label class="field"><span>Neues Passwort</span><input id="auth-new" type="password" autocomplete="new-password" placeholder="••••••••"></label>
+            <p class="hint ok">Access protection is active.</p>
+            <label class="field"><span>Current password</span><input id="auth-current" type="password" autocomplete="current-password" placeholder="••••••••"></label>
+            <label class="field"><span>New password</span><input id="auth-new" type="password" autocomplete="new-password" placeholder="••••••••"></label>
             <div class="row-buttons">
-              <button id="auth-change" class="btn ghost" type="button">Passwort ändern</button>
-              <button id="auth-disable" class="btn ghost danger" type="button">Ausschalten</button>
+              <button id="auth-change" class="btn ghost" type="button">Change password</button>
+              <button id="auth-disable" class="btn ghost danger" type="button">Disable</button>
             </div>
-            <button id="auth-logout" class="btn ghost" type="button">Auf diesem Gerät abmelden</button>
+            <button id="auth-logout" class="btn ghost" type="button">Sign out on this device</button>
           </div>
         </section>
 
         <section class="card">
-          <div class="card-head"><h2>Aufräumen</h2></div>
-          <label class="switch"><input id="cleanup-enabled" type="checkbox"><i></i><span>Lokale Kopien nach bestätigtem Upload löschen</span></label>
-          <label class="field"><span>Wartezeit in Stunden</span><input id="cleanup-hours" type="number" min="1" max="8760" step="1" inputmode="numeric"></label>
-          <p class="hint">Gelöscht wird nur, was Paperless bestätigt hat. Alles, was noch in der Warteschlange hängt, abgelehnt wurde oder als Duplikat gilt, bleibt liegen.</p>
+          <div class="card-head"><h2>Cleanup</h2></div>
+          <label class="switch"><input id="cleanup-enabled" type="checkbox"><i></i><span>Delete local copies after confirmed upload</span></label>
+          <label class="field"><span>Retention time in hours</span><input id="cleanup-hours" type="number" min="1" max="8760" step="1" inputmode="numeric"></label>
+          <p class="hint">Only files confirmed by Paperless are deleted. Documents still queued, rejected or flagged as duplicates are kept.</p>
         </section>
 
         <section class="card">
           <div class="card-head"><h2>Standard-Tags</h2></div>
           <div id="default-tag-list" class="chips"></div>
-          <div class="chip-input"><input id="default-tag-input" type="text" placeholder="Tag hinzufügen"><button id="default-tag-add" type="button" aria-label="Tag hinzufügen">+</button></div>
-          <label class="switch"><input id="create-missing-tags" type="checkbox"><i></i><span>Fehlende Tags in Paperless anlegen</span></label>
+          <div class="chip-input"><input id="default-tag-input" type="text" placeholder="Add tag"><button id="default-tag-add" type="button" aria-label="Add tag">+</button></div>
+          <label class="switch"><input id="create-missing-tags" type="checkbox"><i></i><span>Create missing tags in Paperless</span></label>
         </section>
 
         <section class="card">
           <details class="fold" id="fold-ha">
             <summary>
               <span class="fold-title">Home Assistant</span>
-              <span class="fold-state" id="ha-state">aus</span>
+              <span class="fold-state" id="ha-state">off</span>
               <span class="chev" aria-hidden="true"></span>
             </summary>
             <div class="fold-body">
-              <label class="switch"><input id="ha-enabled" type="checkbox"><i></i><span>REST-Schnittstelle aktivieren</span></label>
-              <label class="field"><span>API-Key</span><span class="copy-field"><input id="ha-api-key" type="text" readonly spellcheck="false" placeholder="noch keiner"><button id="ha-copy" class="btn tiny" type="button">Kopieren</button></span></label>
+              <label class="switch"><input id="ha-enabled" type="checkbox"><i></i><span>Enable REST interface</span></label>
+              <label class="field"><span>API-Key</span><span class="copy-field"><input id="ha-api-key" type="text" readonly spellcheck="false" placeholder="none yet"><button id="ha-copy" class="btn tiny" type="button">Copy</button></span></label>
               <div class="field-row">
-                <button id="ha-rotate" class="btn ghost" type="button">Neuen Key erzeugen</button>
-                <button id="ha-test" class="btn ghost" type="button">Endpoint testen</button>
+                <button id="ha-rotate" class="btn ghost" type="button">Generate new key</button>
+                <button id="ha-test" class="btn ghost" type="button">Test endpoint</button>
               </div>
-              <label class="field"><span>Webhook zurück an Home Assistant (optional)</span><input id="ha-webhook-url" type="url" inputmode="url" spellcheck="false" placeholder="https://ha.local/api/webhook/scan_fertig"></label>
+              <label class="field"><span>Webhook callback to Home Assistant (optional)</span><input id="ha-webhook-url" type="url" inputmode="url" spellcheck="false" placeholder="https://ha.local/api/webhook/scan_finished"></label>
               <details class="yaml-box">
-                <summary>YAML für Home Assistant <span class="chev" aria-hidden="true"></span></summary>
+                <summary>YAML for Home Assistant <span class="chev" aria-hidden="true"></span></summary>
                 <pre id="ha-yaml"></pre>
-                <button id="ha-yaml-copy" class="btn ghost wide" type="button">YAML kopieren</button>
+                <button id="ha-yaml-copy" class="btn ghost wide" type="button">Copy YAML</button>
               </details>
             </div>
           </details>
         </section>
 
         <section class="card">
-          <div class="card-head"><h2>Version</h2><button id="update-check" class="btn tiny ghost" type="button">Jetzt prüfen</button></div>
+          <div class="card-head"><h2>Version</h2><button id="update-check" class="btn tiny ghost" type="button">Check now</button></div>
           <div class="about-row">
-            <div><b id="about-version">ScanDeck</b><span id="about-status" class="tile-sub">Version wird geladen …</span></div>
-            <a id="about-link" class="btn tiny" href="#" target="_blank" rel="noopener" hidden>Release ansehen</a>
+            <div><b id="about-version">ScanDeck</b><span id="about-status" class="tile-sub">Loading version …</span></div>
+            <a id="about-link" class="btn tiny" href="#" target="_blank" rel="noopener" hidden>View release</a>
           </div>
-          <label class="switch"><input id="update-check-enabled" type="checkbox"><i></i><span>Täglich auf GitHub nach Updates sehen</span></label>
+          <label class="switch"><input id="update-check-enabled" type="checkbox"><i></i><span>Check GitHub for updates daily</span></label>
         </section>
 
         <section class="card danger">
-          <div class="card-head"><h2>Zurücksetzen</h2></div>
-          <p class="hint">Löscht die gespeicherte Konfiguration und startet den Einrichtungsassistenten erneut.</p>
-          <button id="reset-config" class="btn danger wide" type="button">Konfiguration löschen</button>
+          <div class="card-head"><h2>Reset</h2></div>
+          <p class="hint">Deletes the saved configuration and restarts the setup wizard.</p>
+          <button id="reset-config" class="btn danger wide" type="button">Delete configuration</button>
         </section>
       </section>
     </main>
@@ -475,12 +475,12 @@
       </button>
       <button class="tab" data-view="history" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3a9 9 0 1 0 8.94 10H19.9A7 7 0 1 1 13 5v3l4.5-4L13 0v3Z"/><path d="M12 8v5l4 2 .8-1.6L13.5 12V8H12Z"/></svg>
-        <span>Verlauf</span>
+        <span>History</span>
         <em id="queue-badge" class="tab-badge" hidden>0</em>
       </button>
       <button class="tab" data-view="settings" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Zm7.4-2.6.1-.9-.1-.9 1.9-1.5-1.9-3.2-2.3.9a7 7 0 0 0-1.6-.9L15.1 4h-3.7l-.4 2.4c-.6.2-1.1.5-1.6.9l-2.3-.9-1.9 3.2 1.9 1.5-.1.9.1.9-1.9 1.5 1.9 3.2 2.3-.9c.5.4 1 .7 1.6.9l.4 2.4h3.7l.4-2.4c.6-.2 1.1-.5 1.6-.9l2.3.9 1.9-3.2-1.9-1.5Z"/></svg>
-        <span>Einstellungen</span>
+        <span>Settings</span>
       </button>
     </nav>
 
@@ -491,17 +491,17 @@
           <div class="sheet-paper"><span></span><span></span><span></span><span></span></div>
           <div class="scan-line"></div>
         </div>
-        <h2 id="progress-title">Scan läuft</h2>
-        <p id="progress-stage" class="progress-stage">Verbinde mit dem Scanner …</p>
+        <h2 id="progress-title">Scan in progress</h2>
+        <p id="progress-stage" class="progress-stage">Connecting to scanner …</p>
         <div class="bar"><div id="progress-bar" class="bar-fill"></div></div>
         <div class="progress-meta"><span id="progress-percent">0 %</span><span id="progress-elapsed">0 s</span></div>
         <ol class="steps" id="progress-steps">
-          <li data-stage="connect">Verbindung</li>
-          <li data-stage="capture">Erfassen</li>
-          <li data-stage="store">Speichern</li>
+          <li data-stage="connect">Connection</li>
+          <li data-stage="capture">Capturing</li>
+          <li data-stage="store">Save</li>
           <li data-stage="upload" data-optional="upload">Upload</li>
         </ol>
-        <button id="scan-cancel" class="btn ghost danger wide" type="button">Scan abbrechen</button>
+        <button id="scan-cancel" class="btn ghost danger wide" type="button">Cancel scan</button>
       </div>
     </div>
 
@@ -509,18 +509,18 @@
     <div id="page-overlay" class="overlay" hidden>
       <div class="page-sheet">
         <header class="page-head">
-          <b id="page-title">Seite 1</b>
-          <button id="page-close" class="btn tiny ghost" type="button" aria-label="Schließen">Schließen</button>
+          <b id="page-title">Page 1</b>
+          <button id="page-close" class="btn tiny ghost" type="button" aria-label="Close">Close</button>
         </header>
         <div class="page-stage">
-          <button id="page-prev" class="page-nav" type="button" aria-label="Vorherige Seite">‹</button>
+          <button id="page-prev" class="page-nav" type="button" aria-label="Previous page">‹</button>
           <img id="page-image" alt="">
-          <button id="page-next" class="page-nav" type="button" aria-label="Nächste Seite">›</button>
+          <button id="page-next" class="page-nav" type="button" aria-label="Next page">›</button>
         </div>
         <footer class="page-foot">
-          <button id="page-rotate" class="btn ghost" type="button">Drehen</button>
-          <button id="page-replace" class="btn ghost" type="button">Neu scannen</button>
-          <button id="page-remove" class="btn ghost danger" type="button">Entfernen</button>
+          <button id="page-rotate" class="btn ghost" type="button">Rotate</button>
+          <button id="page-replace" class="btn ghost" type="button">Rescan</button>
+          <button id="page-remove" class="btn ghost danger" type="button">Remove</button>
         </footer>
       </div>
     </div>
@@ -529,17 +529,17 @@
     <div id="preview-overlay" class="overlay" hidden>
       <div class="preview-sheet">
         <header class="preview-head">
-          <div><b id="preview-name">Scan</b><span id="preview-meta">Vorschau</span></div>
+          <div><b id="preview-name">Scan</b><span id="preview-meta">Preview</span></div>
           <div class="countdown">
             <svg viewBox="0 0 36 36" aria-hidden="true"><circle class="cd-track" cx="18" cy="18" r="16"></circle><circle id="countdown-ring" class="cd-bar" cx="18" cy="18" r="16"></circle></svg>
             <span id="countdown-value">10</span>
           </div>
         </header>
-        <div class="preview-stage"><img id="preview-image" alt="Vorschau des Scans"></div>
+        <div class="preview-stage"><img id="preview-image" alt="Scan preview"></div>
         <footer class="preview-foot">
-          <button id="preview-keep" class="btn ghost" type="button">Angeheftet lassen</button>
-          <a id="preview-open" class="btn ghost" href="/api/preview/file" target="_blank" rel="noopener">Öffnen</a>
-          <button id="preview-close" class="btn primary" type="button">Fertig</button>
+          <button id="preview-keep" class="btn ghost" type="button">Keep pinned</button>
+          <a id="preview-open" class="btn ghost" href="/api/preview/file" target="_blank" rel="noopener">Open</a>
+          <button id="preview-close" class="btn primary" type="button">Done</button>
         </footer>
       </div>
     </div>
@@ -548,14 +548,14 @@
     <div id="login-overlay" class="overlay" hidden>
       <form id="login-form" class="login-sheet" autocomplete="on">
         <img class="login-mark" src="{{ url_for('static', filename='icons/icon-192.png') }}" alt="" aria-hidden="true">
-        <h2>ScanDeck ist geschützt</h2>
-        <p class="hint">Bitte das Passwort eingeben, das unter „Zugriffsschutz“ vergeben wurde.</p>
+        <h2>ScanDeck is protected</h2>
+        <p class="hint">Please enter the password configured under Access Protection.</p>
         <label class="field">
-          <span>Passwort</span>
+          <span>Password</span>
           <input id="login-password" type="password" autocomplete="current-password" required>
         </label>
         <p id="login-error" class="login-error" role="alert" hidden></p>
-        <button id="login-submit" class="btn primary" type="submit">Anmelden</button>
+        <button id="login-submit" class="btn primary" type="submit">Sign in</button>
       </form>
     </div>
 

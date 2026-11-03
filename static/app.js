@@ -6,8 +6,8 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
 const LABELS = {
-  source: { Platen: "Flachbett", Feeder: "Einzug" },
-  color_mode: { RGB24: "Farbe", Grayscale8: "Grau" },
+  source: { Platen: "Flatbed", Feeder: "Feeder" },
+  color_mode: { RGB24: "Color", Grayscale8: "Grey" },
   output_format: { "application/pdf": "PDF", "image/jpeg": "JPEG" },
 };
 
@@ -25,15 +25,15 @@ const QUICK_CYCLE = {
 };
 
 const STAGE_TEXT = {
-  merge: "Seiten werden zu einer PDF zusammengefügt …",
-  start: "Scan wird vorbereitet …",
-  connect: "Verbinde mit dem Scanner …",
-  job: "Scanauftrag wird übermittelt …",
-  capture: "Dokument wird erfasst …",
-  store: "Scan wird gespeichert …",
-  upload: "Übertrage nach Paperless-ngx …",
-  done: "Fertig",
-  error: "Fehlgeschlagen",
+  merge: "Merging pages into one PDF …",
+  start: "Preparing scan …",
+  connect: "Connecting to scanner …",
+  job: "Submitting scan job …",
+  capture: "Capturing document …",
+  store: "Saving scan …",
+  upload: "Uploading to Paperless-ngx …",
+  done: "Finished",
+  error: "Failed",
   cancelled: "Abgebrochen",
 };
 
@@ -48,7 +48,7 @@ const state = {
   running: false,
   batch: { active: false, pages: [], replace_index: null },
   collections: { loaded: false },
-  progressTitle: "Scan läuft",
+  progressTitle: "Scan in progress",
   queue: 0,
   auth: { enabled: false, authenticated: true },
   capabilities: { known: false },
@@ -158,7 +158,7 @@ function syncDeviceLimits() {
   limitSegment(
     "source",
     known && caps.sources && caps.sources.length ? caps.sources : null,
-    "Diese Quelle meldet der Scanner nicht",
+    "This source is not reported by scanner",
     (allowed) => allowed[0]
   );
 
@@ -167,19 +167,19 @@ function syncDeviceLimits() {
   const sizes = forSource("paper_sizes");
   const maxDpi = forSource("max_resolution");
 
-  limitSegment("paper-size", sizes, "Passt nicht auf diese Quelle", (allowed) => allowed[0] || "A4");
+  limitSegment("paper-size", sizes, "Does not fit this source", (allowed) => allowed[0] || "A4");
 
   const sheet = known && caps.sheet ? caps.sheet.find((entry) => entry.source === source) : null;
   limitSegment(
     "color-mode",
     sheet && sheet.color_modes.length ? sheet.color_modes : null,
-    "Diesen Farbmodus kann die Quelle nicht",
+    "This color mode is not supported by source",
     (allowed) => allowed[0]
   );
   limitSegment(
     "output-format",
     sheet && sheet.formats.length ? sheet.formats : null,
-    "Dieses Format kann die Quelle nicht",
+    "This format is not supported by source",
     (allowed) => allowed[0]
   );
 
@@ -203,7 +203,7 @@ function renderResolutionSegment(maxDpi) {
         button.type = "button";
         button.dataset.value = String(dpi);
         button.textContent = String(dpi);
-        if (dpi === DPI_SLOW) button.title = "Sehr fein — ein Scan kann mehrere Minuten dauern";
+        if (dpi === DPI_SLOW) button.title = "Very fine resolution — a scan may take several minutes";
         return button;
       })
     );
@@ -240,10 +240,10 @@ function quickOptions(key) {
 }
 
 const ADF_TEXT = {
-  ScannerAdfLoaded: ["Einzug bestückt", "ok"],
-  ScannerAdfProcessing: ["Einzug zieht ein", "ok"],
-  ScannerAdfEmpty: ["Einzug leer — Papier einlegen", "warn"],
-  ScannerAdfJam: ["Papierstau im Einzug", "warn"],
+  ScannerAdfLoaded: ["Feeder loaded", "ok"],
+  ScannerAdfProcessing: ["Feeder feeding", "ok"],
+  ScannerAdfEmpty: ["Feeder empty — please insert paper", "warn"],
+  ScannerAdfJam: ["Paper jam in feeder", "warn"],
 };
 
 // Beim Einzug ist die eine Frage vor dem Scan: liegt Papier drin und erkennt
@@ -299,7 +299,7 @@ function watchFeeder() {
   setTimeout(tick, 800);
 }
 
-const COLOR_NAMES = { RGB24: "Farbe", Grayscale8: "Graustufen", BlackAndWhite1: "Schwarzweiß" };
+const COLOR_NAMES = { RGB24: "Color", Grayscale8: "Greyscale", BlackAndWhite1: "Black and White" };
 const FORMAT_NAMES = { "application/pdf": "PDF", "image/jpeg": "JPEG" };
 
 // Antwortet auf "was kann mein Drucker eigentlich?" - ausgelesen, nicht geraten.
@@ -315,7 +315,7 @@ function renderDeviceSheet() {
   }
 
   model.textContent = `${caps.model} · eSCL ${caps.version}`
-    + (caps.duplex ? " · beidseitiger Einzug" : "");
+    + (caps.duplex ? " · duplex feeder" : "");
 
   container.replaceChildren();
   caps.sheet.forEach((source) => {
@@ -325,8 +325,8 @@ function renderDeviceSheet() {
     title.textContent = source.label;
     const list = document.createElement("dl");
     const rows = [
-      ["Auflösung", source.resolutions.length ? `${source.resolutions.join(", ")} dpi` : "nicht gemeldet"],
-      ["Fläche", source.area_mm[0] ? `${source.area_mm[0]} × ${source.area_mm[1]} mm` : "nicht gemeldet"],
+      ["Resolution", source.resolutions.length ? `${source.resolutions.join(", ")} dpi` : "not reported"],
+      ["Area", source.area_mm[0] ? `${source.area_mm[0]} × ${source.area_mm[1]} mm` : "not reported"],
       ["Papier", source.paper_sizes.join(", ") || "—"],
       ["Farbe", source.color_modes.map((mode) => COLOR_NAMES[mode] || mode).join(", ") || "—"],
       ["Format", source.formats.map((format) => FORMAT_NAMES[format] || format).join(", ") || "—"],
@@ -436,7 +436,7 @@ function renderTiles() {
   const paperless = $("#tile-paperless");
   const paperlessReady = config.upload_to_paperless && config.paperless_url && config.paperless_token_configured;
   paperless.className = `tile ${paperlessReady ? "ok" : config.upload_to_paperless ? "warn" : "off"}`;
-  $("#tile-paperless-value").textContent = paperlessReady ? "Aktiv" : config.upload_to_paperless ? "Unvollständig" : "Aus";
+  $("#tile-paperless-value").textContent = paperlessReady ? "Active" : config.upload_to_paperless ? "Incomplete" : "Off";
   $("#tile-paperless-sub").textContent = config.paperless_url
     ? config.paperless_url.replace(/^https?:\/\//, "")
     : "nur lokale Ablage";
@@ -456,7 +456,7 @@ function renderLastScan(scanState) {
   if (!scanState.last_name) {
     tile.className = "tile off";
     $("#tile-last-value").textContent = "—";
-    $("#tile-last-sub").textContent = "noch keiner";
+    $("#tile-last-sub").textContent = "none yet";
     return;
   }
   tile.className = `tile ${scanState.last_error ? "warn" : "ok"}`;
@@ -472,7 +472,7 @@ function setStatus(text, kind) {
 function renderHaYaml() {
   const origin = window.location.origin;
   const key = getValue("ha-api-key") || "<API-KEY>";
-  $("#ha-yaml").textContent = `# configuration.yaml — Scan per Automatisierung auslösen
+  $("#ha-yaml").textContent = `# configuration.yaml — Trigger scan via automation
 rest_command:
   scan_deck_scan:
     url: "${origin}/api/ha/scan"
@@ -497,7 +497,7 @@ sensor:
       - last_error
     scan_interval: 15
 
-# Beispiel: Bewegungsmelder löst einen Scan aus
+# Example: Motion sensor triggers a scan
 automation:
   - alias: "Scan bei Bewegung am Schreibtisch"
     trigger:
@@ -635,7 +635,7 @@ async function saveSettings(announce = true) {
   applyConfig(config);
   // Anderer Scanner, andere Faehigkeiten - also frisch auslesen.
   if (config.scanner_url && config.scanner_url !== previousScanner) loadCapabilities().catch(() => {});
-  if (announce) toast("Gespeichert", "success");
+  if (announce) toast("Saved", "success");
   return config;
 }
 
@@ -802,7 +802,7 @@ async function persistOrder(container) {
   if (order.every((value, position) => value === position)) return;
   try {
     renderBatch(await api("/api/batch/order", { method: "POST", body: JSON.stringify({ order }) }));
-    toast("Reihenfolge gespeichert");
+    toast("Page order saved");
   } catch (error) {
     toast(error.message, "error");
     loadBatch().catch(() => {});
@@ -834,9 +834,9 @@ function renderBatch(batch) {
 
   $("#batch-hint").textContent =
     armed !== null && armed !== undefined
-      ? `Nächster Scan ersetzt Seite ${armed + 1}`
+      ? `Next scan replaces page ${armed + 1}`
       : pages.length === 0
-      ? "Scanne die erste Seite"
+      ? "Scan the first page"
       : `${pages.length} Seite(n) — weiter scannen oder ablegen`;
 
   const container = $("#batch-pages");
@@ -894,7 +894,7 @@ function renderBatch(batch) {
     : batch.active
     ? pages.length === 0
       ? "Erste Seite scannen"
-      : "Seite hinzufügen"
+      : "Add page"
     : "Scan starten";
 }
 
@@ -925,8 +925,8 @@ async function toggleBatch() {
   try {
     if (on) {
       renderBatch(await api("/api/batch/start", { method: "POST", body: "{}" }));
-      toast("Stapel gestartet — jede Seite wird gesammelt");
-    } else if ((state.batch?.pages || []).length && !window.confirm("Gesammelte Seiten verwerfen?")) {
+      toast("Batch started — pages are collected");
+    } else if ((state.batch?.pages || []).length && !window.confirm("Discard collected pages?")) {
       setValue("batch-toggle", true);
     } else {
       renderBatch(await api("/api/batch/cancel", { method: "POST", body: "{}" }));
@@ -940,7 +940,7 @@ async function toggleBatch() {
 async function armReplace(index) {
   try {
     renderBatch(await api("/api/batch/replace", { method: "POST", body: JSON.stringify({ index }) }));
-    if (index !== null) toast(`Scan starten, um Seite ${index + 1} zu ersetzen`);
+    if (index !== null) toast(`Start scan to replace page ${index + 1}`);
   } catch (error) {
     toast(error.message, "error");
   }
@@ -957,7 +957,7 @@ async function removePage(index) {
 async function rotateWholeBatch() {
   try {
     renderBatch(await api("/api/batch/rotate-all", { method: "POST", body: JSON.stringify({ degrees: 180 }) }));
-    toast("Alle Seiten gedreht", "success");
+    toast("All pages rotated", "success");
   } catch (error) {
     toast(error.message, "error");
   }
@@ -966,7 +966,7 @@ async function rotateWholeBatch() {
 async function reverseBatch() {
   try {
     renderBatch(await api("/api/batch/reverse", { method: "POST" }));
-    toast("Reihenfolge umgekehrt", "success");
+    toast("Page order reversed", "success");
   } catch (error) {
     toast(error.message, "error");
   }
@@ -974,7 +974,7 @@ async function reverseBatch() {
 
 async function finishBatch() {
   try {
-    state.progressTitle = "Stapel wird abgeschlossen";
+    state.progressTitle = "Batch finishing";
     setScanning(true);
     setProgress(10, "merge");
     await api("/api/batch/finish", {
@@ -992,11 +992,11 @@ async function finishBatch() {
 
 const STATUS_LABEL = {
   success: "In Paperless",
-  processing: "Wird verarbeitet",
-  pending: "Wartet auf Upload",
-  failed: "Fehlgeschlagen",
-  duplicate: "Duplikat",
-  local: "Nur lokal",
+  processing: "Processing",
+  pending: "Waiting for upload",
+  failed: "Failed",
+  duplicate: "Duplicate",
+  local: "Local only",
 };
 
 const HISTORY_ICONS = {
@@ -1029,8 +1029,8 @@ function renderHistory(data) {
 
   $("#history-summary").textContent = entries.length
     ? data.open
-      ? `${entries.length} Scans · ${data.open} noch offen`
-      : `${entries.length} Scans · alles übertragen`
+      ? `${entries.length} scans · ${data.open} pending`
+      : `${entries.length} scans · all uploaded`
     : "Noch keine Scans.";
 
   entries.forEach((job) => {
@@ -1050,7 +1050,7 @@ function renderHistory(data) {
       thumb = document.createElement("div");
       thumb.className = "history-thumb missing";
       thumb.textContent = "✓";
-      thumb.title = "Lokale Kopie wurde aufgeräumt";
+      thumb.title = "Local copy was cleaned up";
     }
 
     const main = document.createElement("div");
@@ -1078,9 +1078,9 @@ function renderHistory(data) {
     tools.className = "history-tools";
     if (job.exists) {
       tools.append(historyButton("retry", "Erneut an Paperless senden", () => retryJob(job.id)));
-      tools.append(historyButton("open", "Datei öffnen", null, `/api/history/${job.id}/file`));
+      tools.append(historyButton("open", "Open file", null, `/api/history/${job.id}/file`));
     }
-    tools.append(historyButton("delete", "Eintrag und Datei löschen", () => deleteJob(job.id, job.name)));
+    tools.append(historyButton("delete", "Delete entry and file", () => deleteJob(job.id, job.name)));
 
     row.append(thumb, main, tools);
     list.append(row);
@@ -1098,7 +1098,7 @@ async function loadHistory() {
 async function retryJob(id) {
   try {
     await api(`/api/history/${id}/retry`, { method: "POST", body: "{}" });
-    toast("Wird erneut gesendet");
+    toast("Retrying upload");
     setTimeout(loadHistory, 1200);
   } catch (error) {
     toast(error.message, "error");
@@ -1106,7 +1106,7 @@ async function retryJob(id) {
 }
 
 async function deleteJob(id, name) {
-  if (!window.confirm(`${name} löschen? Die lokale Datei wird mit entfernt.`)) return;
+  if (!window.confirm(`Delete ${name}? Local file will also be removed.`)) return;
   try {
     await api(`/api/history/${id}`, { method: "DELETE" });
     loadHistory();
@@ -1120,7 +1120,7 @@ async function deleteJob(id, name) {
 function fillSelect(id, items, selected) {
   const select = document.getElementById(id);
   const keep = selected ?? select.value;
-  select.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "— nicht setzen —" }));
+  select.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "— do not set —" }));
   items.forEach((item) => {
     const option = document.createElement("option");
     option.value = String(item.id);
@@ -1193,7 +1193,7 @@ async function checkForUpdate(force = false) {
     link.href = info.url || releases;
 
     if (info.disabled) {
-      status.textContent = "Update-Prüfung ist deaktiviert.";
+      status.textContent = "Update check is disabled.";
       chip.classList.remove("has-update");
       link.hidden = true;
       return info;
@@ -1201,9 +1201,9 @@ async function checkForUpdate(force = false) {
     if (info.update_available) {
       chip.classList.add("has-update");
       $("#version-chip-text").textContent = info.latest;
-      status.textContent = `Version ${info.latest} ist verfügbar.`;
+      status.textContent = `Version ${info.latest} is available.`;
       link.hidden = false;
-      if (force) toast(`Update ${info.latest} verfügbar`, "success");
+      if (force) toast(`Update ${info.latest} available`, "success");
     } else {
       chip.classList.remove("has-update");
       $("#version-chip-text").textContent = `v${info.current}`;
@@ -1211,13 +1211,13 @@ async function checkForUpdate(force = false) {
         ? "GitHub lieferte keine Versionsinfo."
         : info.latest
         ? "Aktuellste Version installiert."
-        : "Auf GitHub ist noch keine Version veröffentlicht.";
+        : "No release published on GitHub yet.";
       link.hidden = true;
-      if (force && !info.error) toast("Alles aktuell", "success");
+      if (force && !info.error) toast("Up to date", "success");
     }
     return info;
   } catch (error) {
-    status.textContent = "Update-Prüfung fehlgeschlagen.";
+    status.textContent = "Update check failed.";
     if (force) toast(error.message, "error");
     return null;
   }
@@ -1265,11 +1265,11 @@ function showProgress() {
   const overlay = $("#progress-overlay");
   overlay.hidden = false;
   overlay.classList.remove("closing");
-  $("#progress-title").textContent = state.progressTitle || "Scan läuft";
+  $("#progress-title").textContent = state.progressTitle || "Scan in progress";
   const cancel = $("#scan-cancel");
   cancel.disabled = false;
   cancel.hidden = false;
-  cancel.textContent = "Scan abbrechen";
+  cancel.textContent = "Cancel scan";
   state.scanStart = Date.now();
   state.eta = null;
   state.etaAt = 0;
@@ -1309,12 +1309,12 @@ function setScanning(running) {
 
 async function startScan() {
   if (!state.config.scanner_url) {
-    toast("Zuerst einen Scanner einrichten", "error");
+    toast("Please configure a scanner first", "error");
     activateView("settings");
     return;
   }
   try {
-    state.progressTitle = state.batch?.active ? "Seite wird gescannt" : "Scan läuft";
+    state.progressTitle = state.batch?.active ? "Scanning page" : "Scan in progress";
     setScanning(true);
     setProgress(2, "start");
     await api("/api/scan", {
@@ -1338,11 +1338,11 @@ function showPreview(filename) {
   const image = $("#preview-image");
   $("#preview-name").textContent = filename || "Scan";
   $("#preview-meta").textContent = state.config.upload_to_paperless
-    ? "Gespeichert und an Paperless übergeben"
-    : "Lokal gespeichert";
+    ? "Saved and sent to Paperless"
+    : "Saved locally";
   image.src = `/api/preview?ts=${Date.now()}`;
   image.onerror = () => {
-    image.alt = "Vorschau konnte nicht geladen werden";
+    image.alt = "Preview could not be loaded";
   };
   overlay.hidden = false;
   overlay.classList.remove("closing");
@@ -1372,7 +1372,7 @@ function keepPreview() {
   clearInterval(state.previewTimer);
   $("#countdown-ring").closest(".countdown").classList.add("paused");
   $("#countdown-value").textContent = "∞";
-  toast("Vorschau bleibt offen");
+  toast("Preview kept open");
 }
 
 /* --- live events --------------------------------------------------------- */
@@ -1398,7 +1398,7 @@ function handleProgress(event) {
   setProgress(event.progress, event.stage);
 
   if (event.stage === "done") {
-    $("#progress-title").textContent = "Fertig";
+    $("#progress-title").textContent = "Finished";
     setTimeout(() => {
       hideProgress();
       setScanning(false);
@@ -1409,7 +1409,7 @@ function handleProgress(event) {
         // Ein Einzug liefert mehrere Blatt auf einmal; die Meldung muss das sagen.
         const added = event.added ?? 1;
         const what = added > 1 ? `${added} Seiten erfasst` : `Seite ${(event.page_index ?? 0) + 1} erfasst`;
-        toast(`${what} · ${event.pages} im Stapel`, "success");
+        toast(`${what} · ${event.pages} in batch`, "success");
       } else {
         showPreview(event.file);
         loadBatch().catch(() => {});
@@ -1420,19 +1420,19 @@ function handleProgress(event) {
     }, 620);
   }
   if (event.stage === "cancelled") {
-    $("#progress-title").textContent = "Abgebrochen";
+    $("#progress-title").textContent = "Cancelled";
     $("#scan-cancel").hidden = true;
     setTimeout(() => {
       hideProgress();
       setScanning(false);
       loadBatch().catch(() => {});
       loadHistory().catch(() => {});
-      toast("Scan abgebrochen", "warning");
+      toast("Scan cancelled", "warning");
     }, 700);
   }
 
   if (event.stage === "error") {
-    $("#progress-title").textContent = "Fehlgeschlagen";
+    $("#progress-title").textContent = "Failed";
     $("#progress-stage").textContent = event.error || "Unbekannter Fehler";
     $("#scan-cancel").hidden = true;
     // Fehler bleiben laenger stehen: sie wollen gelesen werden, nicht erahnt.
@@ -1441,7 +1441,7 @@ function handleProgress(event) {
       setScanning(false);
       setStatus("Fehler", "error");
       signalDone("error");
-      toast(event.error || "Scan fehlgeschlagen", "error");
+      toast(event.error || "Scan failed", "error");
     }, 900);
   }
 }
@@ -1488,7 +1488,7 @@ async function refreshState() {
 async function runDiscovery(subnetId, containerId, targetId, auto = false) {
   const container = document.getElementById(containerId);
   const status = Object.assign(document.createElement("p"), {
-    textContent: auto ? "Netzwerke werden durchsucht … das dauert einen Moment." : "Suche läuft …",
+    textContent: auto ? "Scanning networks … this will take a moment." : "Searching …",
   });
   container.replaceChildren(status);
   try {
@@ -1501,7 +1501,7 @@ async function runDiscovery(subnetId, containerId, targetId, auto = false) {
       container.append(
         Object.assign(document.createElement("p"), {
           textContent: auto
-            ? "Kein Scanner gefunden. Trage das Netzwerk unten manuell ein."
+            ? "No scanner found. Please enter the network manually below."
             : "Kein eSCL-Scanner gefunden.",
         })
       );
@@ -1523,7 +1523,7 @@ async function runDiscovery(subnetId, containerId, targetId, auto = false) {
       );
       item.addEventListener("click", () => {
         setValue(targetId, device.url);
-        toast(`${device.model} übernommen`, "success");
+        toast(`${device.model} selected`, "success");
       });
       container.append(item);
     });
@@ -1583,7 +1583,7 @@ function renderWizardStep(direction = 1) {
 
   $("#wiz-back").classList.toggle("hidden", state.wizardStep === 0);
   $("#wiz-next").textContent =
-    state.wizardStep === 0 ? "Los geht's" : state.wizardStep === WIZARD_STEPS - 1 ? "Einrichtung abschließen" : "Weiter";
+    state.wizardStep === 0 ? "Get started" : state.wizardStep === WIZARD_STEPS - 1 ? "Finish setup" : "Next";
   $("#wizard-track").scrollTo({ top: 0, behavior: "smooth" });
   syncWizardConditionals();
 }
@@ -1614,12 +1614,12 @@ function wizardPayload() {
 async function wizardNext() {
   const button = $("#wiz-next");
   if (state.wizardStep === 1 && !getValue("wiz-scanner-url").trim()) {
-    toast("Bitte einen Scanner auswählen oder eintragen", "error");
+    toast("Please select or enter a scanner", "error");
     return;
   }
   if (state.wizardStep === 2 && getValue("wiz-upload")) {
     if (!getValue("wiz-paperless-url").trim()) {
-      toast("Paperless-URL fehlt", "error");
+      toast("Paperless URL is missing", "error");
       return;
     }
   }
@@ -1654,7 +1654,7 @@ async function wizardNext() {
     setTimeout(() => {
       wizard.hidden = true;
       wizard.classList.remove("closing");
-      toast("Alles eingerichtet — bereit zum Scannen", "success");
+      toast("All set up — ready to scan", "success");
     }, 340);
   } catch (error) {
     toast(error.message, "error");
@@ -1701,7 +1701,7 @@ $$(".quick").forEach((button) =>
     // eine Einstellung, die der Scanner beim naechsten Mal ablehnt.
     const options = quickOptions(key);
     if (options.length < 2) {
-      toast(`Dein Scanner bietet hier nur eine Möglichkeit.`, "warning");
+      toast(`Your scanner only supports one option here.`, "warning");
       return;
     }
     const current = options.findIndex((option) => String(option) === String(state.config[key]));
@@ -1764,7 +1764,7 @@ $("#test-paperless").addEventListener("click", async () => {
   try {
     await saveSettings(false);
     await api("/api/test/paperless", { method: "POST", body: "{}" });
-    toast("Paperless-ngx verbunden", "success");
+    toast("Paperless-ngx connected", "success");
   } catch (error) {
     toast(error.message, "error");
   } finally {
@@ -1777,7 +1777,7 @@ function bindDiscovery(buttonId, subnetId, containerId, targetId, auto) {
   button.addEventListener("click", async () => {
     const label = button.textContent;
     button.disabled = true;
-    button.textContent = "Suche läuft …";
+    button.textContent = "Searching …";
     await runDiscovery(subnetId, containerId, targetId, auto);
     button.textContent = label;
     button.disabled = false;
@@ -1815,10 +1815,10 @@ $("#batch-rotate-all").addEventListener("click", rotateWholeBatch);
 $("#batch-reverse").addEventListener("click", reverseBatch);
 
 $("#batch-cancel").addEventListener("click", async () => {
-  if ((state.batch?.pages || []).length && !window.confirm("Gesammelte Seiten verwerfen?")) return;
+  if ((state.batch?.pages || []).length && !window.confirm("Discard collected pages?")) return;
   try {
     renderBatch(await api("/api/batch/cancel", { method: "POST", body: "{}" }));
-    toast("Stapel verworfen");
+    toast("Batch discarded");
   } catch (error) {
     toast(error.message, "error");
   }
@@ -1844,7 +1844,7 @@ $("#wiz-test-paperless").addEventListener("click", async () => {
   try {
     await api("/api/config", { method: "PUT", body: JSON.stringify(wizardPayload()) });
     await api("/api/test/paperless", { method: "POST", body: "{}" });
-    toast("Paperless-ngx verbunden", "success");
+    toast("Paperless-ngx connected", "success");
   } catch (error) {
     toast(error.message, "error");
   } finally {
@@ -1859,7 +1859,7 @@ $("#wiz-ha").addEventListener("change", async () => {
   syncWizardConditionals();
   if (getValue("wiz-ha") && !getValue("wiz-ha-key")) await ensureHaKey("wiz-ha-key").catch(() => {});
 });
-$("#wiz-ha-copy").addEventListener("click", () => copyText(getValue("wiz-ha-key"), "API-Key kopiert"));
+$("#wiz-ha-copy").addEventListener("click", () => copyText(getValue("wiz-ha-key"), "API key copied"));
 $("#wiz-next").addEventListener("click", wizardNext);
 $("#wiz-back").addEventListener("click", () => {
   if (state.wizardStep === 0) return;
@@ -1867,15 +1867,15 @@ $("#wiz-back").addEventListener("click", () => {
   renderWizardStep(-1);
 });
 
-$("#ha-copy").addEventListener("click", () => copyText(getValue("ha-api-key"), "API-Key kopiert"));
-$("#ha-yaml-copy").addEventListener("click", () => copyText($("#ha-yaml").textContent, "YAML kopiert"));
+$("#ha-copy").addEventListener("click", () => copyText(getValue("ha-api-key"), "API key copied"));
+$("#ha-yaml-copy").addEventListener("click", () => copyText($("#ha-yaml").textContent, "YAML copied"));
 $("#ha-rotate").addEventListener("click", async () => {
   try {
     const { api_key: key } = await api("/api/ha/key", { method: "POST", body: "{}" });
     setValue("ha-api-key", key);
     setValue("ha-enabled", true);
     renderHaYaml();
-    toast("Neuer API-Key erzeugt", "success");
+    toast("New API key generated", "success");
   } catch (error) {
     toast(error.message, "error");
   }
@@ -1888,7 +1888,7 @@ $("#ha-test").addEventListener("click", async () => {
     const response = await fetch("/api/ha/test", { method: "POST", headers: { "X-API-Key": key } });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
-    toast("Schnittstelle erreichbar", "success");
+    toast("Interface reachable", "success");
   } catch (error) {
     toast(error.message, "error");
   }
@@ -1909,7 +1909,7 @@ $("#update-check").addEventListener("click", async () => {
 });
 
 $("#reset-config").addEventListener("click", async () => {
-  if (!window.confirm("Konfiguration wirklich löschen und neu einrichten?")) return;
+  if (!window.confirm("Really delete configuration and restart setup?")) return;
   try {
     const config = await api("/api/setup/reset", { method: "POST", body: "{}" });
     state.sessionTags = [];
@@ -1994,7 +1994,7 @@ function renderProfileEditor() {
       const adopt = document.createElement("button");
       adopt.type = "button";
       adopt.className = "btn tiny ghost";
-      adopt.textContent = "Aktuelle Einstellungen übernehmen";
+      adopt.textContent = "Adopt current settings";
       adopt.addEventListener("click", () => saveProfiles(
         profiles.map((entry, position) =>
           (position === index ? { ...entry, ...currentScanSettings() } : entry))
@@ -2003,7 +2003,7 @@ function renderProfileEditor() {
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "btn tiny ghost danger";
-      remove.textContent = "Löschen";
+      remove.textContent = "Delete";
       remove.addEventListener("click", () => saveProfiles(profiles.filter((_, position) => position !== index)));
 
       box.append(name, summary, adopt, remove);
@@ -2031,7 +2031,7 @@ async function saveProfiles(profiles) {
     const body = await api("/api/profiles", { method: "PUT", body: JSON.stringify({ profiles }) });
     state.config.profiles = body.profiles;
     renderProfiles();
-    toast("Profile gespeichert", "success");
+    toast("Profiles saved", "success");
   } catch (error) {
     toast(error.message, "error");
   }
@@ -2061,8 +2061,8 @@ async function renderPushState() {
   chip.classList.toggle("on", Boolean(info.enabled));
   disable.hidden = !info.enabled;
   $("#push-info").textContent = info.enabled
-    ? `${info.devices || 0} Gerät(e) angemeldet.`
-    : "Noch nicht eingerichtet.";
+    ? `${info.devices || 0} device(s) registered.`
+    : "Not configured yet.";
 }
 
 $("#push-enable").addEventListener("click", async () => {
@@ -2073,7 +2073,7 @@ $("#push-enable").addEventListener("click", async () => {
       throw new Error("Dieser Browser kann keine Benachrichtigungen empfangen.");
     }
     if ((await Notification.requestPermission()) !== "granted") {
-      throw new Error("Ohne Erlaubnis geht es nicht — im Browser für diese Seite freigeben.");
+      throw new Error("Permission required — please allow notifications in browser for this site.");
     }
     const { public_key: publicKey } = await api("/api/push/enable", { method: "POST" });
     const registration = await navigator.serviceWorker.ready;
@@ -2085,7 +2085,7 @@ $("#push-enable").addEventListener("click", async () => {
     });
     await api("/api/push/subscribe", { method: "POST", body: JSON.stringify(subscription.toJSON()) });
     await renderPushState();
-    toast("Benachrichtigungen aktiv", "success");
+    toast("Notifications enabled", "success");
   } catch (error) {
     toast(error.message, "error");
   } finally {
@@ -2096,7 +2096,7 @@ $("#push-enable").addEventListener("click", async () => {
 $("#push-test").addEventListener("click", async () => {
   try {
     await api("/api/push/test", { method: "POST" });
-    toast("Testmeldung verschickt", "success");
+    toast("Test notification sent", "success");
   } catch (error) {
     toast(error.message, "error");
   }
@@ -2112,23 +2112,23 @@ $("#push-disable").addEventListener("click", async () => {
   }
   await api("/api/push/disable", { method: "POST" }).catch(() => {});
   await renderPushState();
-  toast("Benachrichtigungen abgeschaltet", "success");
+  toast("Notifications disabled", "success");
 });
 
 $("#mqtt-test").addEventListener("click", async () => {
   const button = $("#mqtt-test");
   button.disabled = true;
-  button.textContent = "Verbinde …";
+  button.textContent = "Connecting …";
   try {
     await api("/api/mqtt/test", { method: "POST", body: JSON.stringify(collectConfig()) });
     setValue("mqtt-password", "");
-    toast("MQTT verbunden — Home Assistant legt die Geräte an", "success");
+    toast("MQTT connected — Home Assistant discovers devices", "success");
     applyConfig(await api("/api/config"));
   } catch (error) {
     toast(error.message, "error");
   } finally {
     button.disabled = false;
-    button.textContent = "Verbinden und testen";
+    button.textContent = "Connect and test";
   }
 });
 
@@ -2220,7 +2220,7 @@ document.addEventListener("keydown", (event) => {
 $("#scan-cancel").addEventListener("click", async () => {
   const button = $("#scan-cancel");
   button.disabled = true;
-  button.textContent = "Wird abgebrochen …";
+  button.textContent = "Cancelling …";
   try {
     await api("/api/scan/cancel", { method: "POST" });
   } catch (error) {
@@ -2292,7 +2292,7 @@ $("#device-refresh").addEventListener("click", async () => {
     state.capabilities = { ...result, known: true };
     syncDeviceLimits();
     renderDeviceSheet();
-    toast("Gerät neu ausgelesen", "success");
+    toast("Device queried again", "success");
   } catch (error) {
     toast(error.message, "error");
   } finally {
@@ -2303,14 +2303,14 @@ $("#device-refresh").addEventListener("click", async () => {
 $("#auth-enable").addEventListener("click", async () => {
   const password = getValue("auth-password");
   if (password !== getValue("auth-password-repeat")) {
-    toast("Die Passwörter stimmen nicht überein", "error");
+    toast("Passwords do not match", "error");
     return;
   }
   try {
     renderAuthCard(await api("/api/auth/enable", { method: "POST", body: JSON.stringify({ password }) }));
     setValue("auth-password", "");
     setValue("auth-password-repeat", "");
-    toast("Zugriffsschutz eingeschaltet", "success");
+    toast("Access protection enabled", "success");
   } catch (error) {
     toast(error.message, "error");
   }
@@ -2324,17 +2324,17 @@ $("#auth-change").addEventListener("click", async () => {
     }));
     setValue("auth-current", "");
     setValue("auth-new", "");
-    toast("Passwort geändert — andere Geräte müssen sich neu anmelden", "success");
+    toast("Password changed — other devices must sign in again", "success");
   } catch (error) {
     toast(error.message, "error");
   }
 });
 
 $("#auth-disable").addEventListener("click", async () => {
-  if (!confirm("Zugriffsschutz ausschalten? Danach kommt jeder im Netz ohne Passwort an die Oberfläche.")) return;
+  if (!confirm("Disable access protection? Anyone on your network will be able to access ScanDeck without a password.")) return;
   try {
     renderAuthCard(await api("/api/auth/disable", { method: "POST" }));
-    toast("Zugriffsschutz ausgeschaltet", "success");
+    toast("Access protection disabled", "success");
   } catch (error) {
     toast(error.message, "error");
   }
