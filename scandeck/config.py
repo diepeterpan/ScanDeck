@@ -47,9 +47,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "cleanup_hours": 24,
     "prewarm_enabled": True,
     "sound_enabled": False,
-    # Post-processing: both off by default to avoid altering or dropping pages unexpectedly.
+    # Post-processing: off by default to avoid altering or dropping pages unexpectedly.
     "skip_blank_pages": False,
     "deskew_enabled": False,
+    "auto_contrast": False,
+    "auto_contrast_cutoff": 2.0,
     "profiles": [],
     "setup_complete": False,
     "ha_enabled": False,
@@ -190,6 +192,12 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
 
     config["skip_blank_pages"] = bool(config.get("skip_blank_pages"))
     config["deskew_enabled"] = bool(config.get("deskew_enabled"))
+    config["auto_contrast"] = bool(config.get("auto_contrast"))
+    try:
+        cutoff = float(config.get("auto_contrast_cutoff", 2.0))
+    except (TypeError, ValueError):
+        cutoff = 2.0
+    config["auto_contrast_cutoff"] = round(max(0.5, min(10.0, cutoff)), 1)
 
     config["mqtt_enabled"] = bool(config.get("mqtt_enabled"))
     config["mqtt_host"] = str(config.get("mqtt_host", "")).strip()

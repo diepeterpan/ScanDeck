@@ -43,6 +43,7 @@ from scandeck.config import (
     validate_config,
 )
 from scandeck.documents import (
+    auto_contrast,
     looks_blank,
     straighten,
     merge_files,
@@ -488,7 +489,7 @@ def scan_worker(session_tags: list[str], trigger: str, overrides: dict[str, Any]
         scanner = ScannerClient(config, logs, timings)
         set_active_scan(scanner)
         sheets = scanner.scan()
-        if config.get("skip_blank_pages") or config.get("deskew_enabled"):
+        if config.get("skip_blank_pages") or config.get("deskew_enabled") or config.get("auto_contrast"):
             logs.progress("tidy", 80)
         sheets = tidy_sheets(sheets, config)
 
@@ -533,12 +534,12 @@ def scan_worker(session_tags: list[str], trigger: str, overrides: dict[str, Any]
 
 
 def tidy_sheets(sheets: list[Path], config: dict[str, Any]) -> list[Path]:
-    """Drop blank backs and straighten crooked pages, if asked to.
+    """Drop blank backs, straighten crooked pages, and enhance contrast if asked to.
 
-    Both are off by default: one throws pages away, the other rewrites them.
-    Neither should happen to someone who did not choose it.
+    All are off by default: one throws pages away, the others rewrite them.
+    None should happen to someone who did not choose it.
     """
-    if not config.get("skip_blank_pages") and not config.get("deskew_enabled"):
+    if not config.get("skip_blank_pages") and not config.get("deskew_enabled") and not config.get("auto_contrast"):
         return sheets
 
     kept: list[Path] = []
@@ -551,6 +552,10 @@ def tidy_sheets(sheets: list[Path], config: dict[str, Any]) -> list[Path]:
             angle = straighten(sheet, int(config.get("resolution", 300)))
             if angle:
                 logs.publish(f"{sheet.name} was {angle:+.1f}° crooked and was straightened.")
+        if config.get("auto_contrast"):
+            cutoff = float(config.get("auto_contrast_cutoff", 2.0))
+            if auto_contrast(sheet, cutoff_percent=cutoff, dpi=int(config.get("resolution", 300))):
+                logs.publish(f"{sheet.name}: auto contrast applied ({cutoff}% cutoff).")
         kept.append(sheet)
 
     if not kept:

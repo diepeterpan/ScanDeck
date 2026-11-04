@@ -541,6 +541,13 @@ function applyConfig(config) {
   setValue("sound-enabled", config.sound_enabled);
   setValue("skip-blank-pages", config.skip_blank_pages);
   setValue("deskew-enabled", config.deskew_enabled);
+  setValue("auto-contrast", config.auto_contrast);
+  const cutoff = config.auto_contrast_cutoff ?? 2.0;
+  setValue("auto-contrast-cutoff", cutoff);
+  const cutoffVal = $("#auto-contrast-cutoff-val");
+  if (cutoffVal) cutoffVal.textContent = `${Number(cutoff).toFixed(1)}%`;
+  const autoContrastSettings = $("#auto-contrast-settings");
+  if (autoContrastSettings) autoContrastSettings.hidden = !config.auto_contrast;
   setValue("mqtt-enabled", config.mqtt_enabled);
   setValue("mqtt-host", config.mqtt_host);
   setValue("mqtt-port", config.mqtt_port ?? 1883);
@@ -616,6 +623,8 @@ function collectConfig() {
     sound_enabled: getValue("sound-enabled"),
     skip_blank_pages: getValue("skip-blank-pages"),
     deskew_enabled: getValue("deskew-enabled"),
+    auto_contrast: getValue("auto-contrast"),
+    auto_contrast_cutoff: parseFloat(getValue("auto-contrast-cutoff") || 2.0),
     mqtt_enabled: getValue("mqtt-enabled"),
     mqtt_host: getValue("mqtt-host"),
     mqtt_port: Number(getValue("mqtt-port") || 1883),
@@ -1790,6 +1799,14 @@ bindDiscovery("wiz-discover-manual", "wiz-subnet", "wiz-devices", "wiz-scanner-u
 
 $("#history-reload").addEventListener("click", loadHistory);
 $("#metadata-reload").addEventListener("click", () => loadCollections(true));
+$("#auto-contrast")?.addEventListener("change", (event) => {
+  const settings = $("#auto-contrast-settings");
+  if (settings) settings.hidden = !event.target.checked;
+});
+$("#auto-contrast-cutoff")?.addEventListener("input", (event) => {
+  const val = $("#auto-contrast-cutoff-val");
+  if (val) val.textContent = `${parseFloat(event.target.value).toFixed(1)}%`;
+});
 $$("#metadata-enabled, #quick-tags-enabled").forEach((toggle) =>
   toggle.addEventListener("change", async () => {
     try {

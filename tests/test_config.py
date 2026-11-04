@@ -117,3 +117,21 @@ def test_parse_version_orders_releases(deck):
     assert parse_version("v1.10.0") > parse_version("1.9.9")
     assert parse_version("1.5.0-rc1") == (1, 5, 0)
     assert parse_version("kaputt") == (0, 0, 0)
+
+
+def test_auto_contrast_config_validation(deck):
+    from scandeck.config import default_config
+
+    cfg = deck.validate_config({**default_config(), "auto_contrast": True, "auto_contrast_cutoff": 4.5})
+    assert cfg["auto_contrast"] is True
+    assert cfg["auto_contrast_cutoff"] == 4.5
+
+    # Test cutoff bounds clamping (0.5 to 10.0)
+    low = deck.validate_config({**default_config(), "auto_contrast_cutoff": -2.0})
+    assert low["auto_contrast_cutoff"] == 0.5
+    high = deck.validate_config({**default_config(), "auto_contrast_cutoff": 50.0})
+    assert high["auto_contrast_cutoff"] == 10.0
+
+    # Test invalid string handling
+    invalid = deck.validate_config({**default_config(), "auto_contrast_cutoff": "not_a_number"})
+    assert invalid["auto_contrast_cutoff"] == 2.0

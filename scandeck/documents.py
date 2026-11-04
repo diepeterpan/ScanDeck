@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 import io
 import threading
 import time
@@ -216,6 +217,92 @@ def straighten(path: Path, dpi: int = 300) -> float:
     except Exception:
         return 0.0  # a page that cannot be rebuilt stays as it was
     return angle
+
+
+def stretch_channel(channel: Any, cutoff_percent: float = 2.0) -> Any:
+    """Stretches a single 8-bit channel's dynamic range using linear contrast stretching.
+
+    Ignores a small percentage of extreme dark and light pixels (noise robustness),
+    mapping the remaining range linearly to [0, 255].
+    """
+    hist = channel.histogram()
+    total_pixels = sum(hist)
+    if total_pixels == 0:
+        return channel
+
+    cdf = []
+    accum = 0
+    for count in hist:
+        accum += count
+        cdf.append(accum)
+
+    cutoff = max(0.1, min(20.0, float(cutoff_percent)))
+    low_bound = total_pixels * (cutoff / 100.0)
+    high_bound = total_pixels * (1.0 - cutoff / 100.0)
+
+    l_min = bisect.bisect_left(cdf, low_bound)
+    l_max = bisect.bisect_left(cdf, high_bound)
+
+    if l_max <= l_min:
+        return channel
+
+    scale = 255.0 / (l_max - l_min)
+    lut = [min(255, max(0, int(round((i - l_min) * scale)))) for i in range(256)]
+    return channel.point(lut)
+
+
+def stretch_image(image: Any, cutoff_percent: float = 2.0) -> Any:
+    """Apply auto-contrast stretching to an image.
+
+    For grayscale images, stretches the single channel. For color (RGB),
+    converts to HSV and stretches the Value (luminance) channel only, preserving
+    color tones while brightening light backgrounds and darkening mid-tone text.
+    """
+    from PIL import Image
+
+    if image.mode == "L":
+        return stretch_channel(image, cutoff_percent)
+
+    rgb = image.convert("RGB")
+    hsv = rgb.convert("HSV")
+    h, s, v = hsv.split()
+    v_stretched = stretch_channel(v, cutoff_percent)
+    return Image.merge("HSV", (h, s, v_stretched)).convert("RGB")
+
+
+def auto_contrast(path: Path, cutoff_percent: float = 2.0, dpi: int = 300) -> bool:
+    """Apply auto-contrast stretching to a document in place.
+
+    Returns True if auto-contrast was successfully applied, False otherwise.
+    """
+    from PIL import Image
+
+    try:
+        if is_pdf(path):
+            import pypdfium2
+
+            pdf = pypdfium2.PdfDocument(str(path))
+            try:
+                scale = max(1.0, min(6.0, dpi / 72))
+                pages = [pdf[index].render(scale=scale).to_pil()
+                         for index in range(len(pdf))]
+            finally:
+                pdf.close()
+            enhanced = [stretch_image(page, cutoff_percent) for page in pages]
+            buffer = io.BytesIO()
+            enhanced[0].save(buffer, "PDF", save_all=True, append_images=enhanced[1:], resolution=float(dpi))
+            path.write_bytes(buffer.getvalue())
+        else:
+            image = Image.open(path)
+            orig_format = image.format or "JPEG"
+            enhanced = stretch_image(image, cutoff_percent)
+            if orig_format.upper() in ("JPEG", "JPG"):
+                enhanced.convert("RGB").save(path, "JPEG", quality=92)
+            else:
+                enhanced.save(path, orig_format)
+        return True
+    except Exception:
+        return False
 
 
 def as_pdf_document(path: Path, rotation: int = 0) -> Any:

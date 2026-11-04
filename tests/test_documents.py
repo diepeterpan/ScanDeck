@@ -158,3 +158,44 @@ def test_a_run_of_nothing_but_blanks_is_reported(deck, tmp_path):
 
     with pytest.raises(RuntimeError, match="blank"):
         deck.tidy_sheets(sheets, config)
+
+
+def test_auto_contrast_grayscale_image(tmp_path):
+    from PIL import Image
+    from scandeck.documents import auto_contrast
+
+    img_path = tmp_path / "low_contrast_gray.png"
+    # Create image with narrow range, e.g. 100 to 180
+    img = Image.linear_gradient("L").point(lambda p: int(100 + (p / 255.0) * 80))
+    img.save(img_path)
+
+    assert auto_contrast(img_path, cutoff_percent=2.0) is True
+
+    result = Image.open(img_path)
+    res_hist = result.histogram()
+    # Stretched should reach near 0 and 255
+    assert sum(res_hist[:10]) > 0
+    assert sum(res_hist[-10:]) > 0
+
+
+def test_auto_contrast_color_image(tmp_path):
+    from PIL import Image
+    from scandeck.documents import auto_contrast
+
+    img_path = tmp_path / "low_contrast_rgb.jpg"
+    img = Image.new("RGB", (100, 100), color=(140, 150, 160))
+    img.save(img_path, "JPEG")
+
+    assert auto_contrast(img_path, cutoff_percent=2.0) is True
+    assert img_path.exists()
+
+
+def test_auto_contrast_in_tidy_sheets(deck, tmp_path):
+    sheets = [page(tmp_path, "test.pdf", lines=8)]
+    before = sheets[0].read_bytes()
+    config = {**deck.store.get(), "auto_contrast": True, "auto_contrast_cutoff": 3.0}
+
+    kept = deck.tidy_sheets(sheets, config)
+    assert kept == sheets
+    assert sheets[0].read_bytes() != before
+
