@@ -211,7 +211,7 @@ function renderResolutionSegment(maxDpi) {
   const nearest = options.includes(wanted)
     ? wanted
     : options.reduce((best, value) => (Math.abs(value - wanted) < Math.abs(best - wanted) ? value : best),
-                     options[0]);
+      options[0]);
   setSegment("resolution", nearest);
   state.config.resolution = nearest;
   const note = $("#dpi-note");
@@ -459,7 +459,7 @@ function renderLastScan(scanState) {
     return;
   }
   tile.className = `tile ${scanState.last_error ? "warn" : "ok"}`;
-  $("#tile-last-value").textContent = (scanState.last_kind || "").toUpperCase() === "PDF" ? "PDF" : "Bild";
+  $("#tile-last-value").textContent = (scanState.last_kind || "").toUpperCase() === "PDF" ? "PDF" : "Image";
   $("#tile-last-sub").textContent = scanState.last_name;
 }
 
@@ -642,7 +642,7 @@ async function saveSettings(announce = true) {
   setValue("paperless-token", "");
   applyConfig(config);
   // Anderer Scanner, andere Faehigkeiten - also frisch auslesen.
-  if (config.scanner_url && config.scanner_url !== previousScanner) loadCapabilities().catch(() => {});
+  if (config.scanner_url && config.scanner_url !== previousScanner) loadCapabilities().catch(() => { });
   if (announce) toast("Saved", "success");
   return config;
 }
@@ -813,7 +813,7 @@ async function persistOrder(container) {
     toast("Page order saved");
   } catch (error) {
     toast(error.message, "error");
-    loadBatch().catch(() => {});
+    loadBatch().catch(() => { });
   }
 }
 
@@ -844,8 +844,8 @@ function renderBatch(batch) {
     armed !== null && armed !== undefined
       ? `Next scan replaces page ${armed + 1}`
       : pages.length === 0
-      ? "Scan the first page"
-      : `${pages.length} page(s) — continue scanning or save`;
+        ? "Scan the first page"
+        : `${pages.length} page(s) — continue scanning or save`;
 
   const container = $("#batch-pages");
   container.replaceChildren();
@@ -898,12 +898,12 @@ function renderBatch(batch) {
   $("#orb-label").textContent = state.running
     ? "Scanning …"
     : armedNow
-    ? `Replace page ${armed + 1}`
-    : batch.active
-    ? pages.length === 0
-      ? "Scan first page"
-      : "Add page"
-    : "Start scan";
+      ? `Replace page ${armed + 1}`
+      : batch.active
+        ? pages.length === 0
+          ? "Scan first page"
+          : "Add page"
+        : "Start scan";
 }
 
 function togglePanel(open) {
@@ -941,7 +941,7 @@ async function toggleBatch() {
     }
   } catch (error) {
     toast(error.message, "error");
-    loadBatch().catch(() => {});
+    loadBatch().catch(() => { });
   }
 }
 
@@ -1218,8 +1218,8 @@ async function checkForUpdate(force = false) {
       status.textContent = info.error
         ? "GitHub did not return version information."
         : info.latest
-        ? "Latest version is installed."
-        : "No release published on GitHub yet.";
+          ? "Latest version is installed."
+          : "No release published on GitHub yet.";
       link.hidden = true;
       if (force && !info.error) toast("Up to date", "success");
     }
@@ -1413,18 +1413,18 @@ function handleProgress(event) {
       if (event.batch) {
         // Inside a batch the thumbnail strip is the feedback; a full-screen
         // preview after every page would only be in the way.
-        loadBatch().catch(() => {});
+        loadBatch().catch(() => { });
         // An ADF feeder scans multiple pages at once; the message reflects total captured.
         const added = event.added ?? 1;
         const what = added > 1 ? `${added} pages captured` : `Page ${(event.page_index ?? 0) + 1} captured`;
         toast(`${what} · ${event.pages} in batch`, "success");
       } else {
         showPreview(event.file);
-        loadBatch().catch(() => {});
-        loadHistory().catch(() => {});
+        loadBatch().catch(() => { });
+        loadHistory().catch(() => { });
       }
       signalDone("success");
-      refreshState().catch(() => {});
+      refreshState().catch(() => { });
     }, 620);
   }
   if (event.stage === "cancelled") {
@@ -1433,8 +1433,8 @@ function handleProgress(event) {
     setTimeout(() => {
       hideProgress();
       setScanning(false);
-      loadBatch().catch(() => {});
-      loadHistory().catch(() => {});
+      loadBatch().catch(() => { });
+      loadHistory().catch(() => { });
       toast("Scan cancelled", "warning");
     }, 700);
   }
@@ -1696,7 +1696,7 @@ $$(".seg").forEach((group) =>
       syncDeviceLimits();
       // Switching to feeder: immediately check if paper is loaded.
       if (group.dataset.target === "source" && button.dataset.value === "Feeder") {
-        pollTray().catch(() => {});
+        pollTray().catch(() => { });
       }
     }
   })
@@ -1719,7 +1719,7 @@ $$(".quick").forEach((button) =>
     renderQuickRow();
     if (key === "source") {
       syncDeviceLimits();
-      if (next === "Feeder") pollTray().catch(() => {});
+      if (next === "Feeder") pollTray().catch(() => { });
     }
     button.classList.add("flash");
     setTimeout(() => button.classList.remove("flash"), 320);
@@ -1873,7 +1873,7 @@ bindEnter("wiz-tag-input", () => addTag("wiz-tag-input", state.wizardTags, rende
 $("#wiz-upload").addEventListener("change", syncWizardConditionals);
 $("#wiz-ha").addEventListener("change", async () => {
   syncWizardConditionals();
-  if (getValue("wiz-ha") && !getValue("wiz-ha-key")) await ensureHaKey("wiz-ha-key").catch(() => {});
+  if (getValue("wiz-ha") && !getValue("wiz-ha-key")) await ensureHaKey("wiz-ha-key").catch(() => { });
 });
 $("#wiz-ha-copy").addEventListener("click", () => copyText(getValue("wiz-ha-key"), "API key copied"));
 $("#wiz-next").addEventListener("click", wizardNext);
@@ -1910,7 +1910,7 @@ $("#ha-test").addEventListener("click", async () => {
   }
 });
 $("#ha-enabled").addEventListener("change", async () => {
-  if (getValue("ha-enabled") && !getValue("ha-api-key")) await ensureHaKey("ha-api-key").catch(() => {});
+  if (getValue("ha-enabled") && !getValue("ha-api-key")) await ensureHaKey("ha-api-key").catch(() => { });
 });
 
 $("#update-check").addEventListener("click", async () => {
@@ -2126,7 +2126,7 @@ $("#push-disable").addEventListener("click", async () => {
   } catch {
     /* local sign-out; server revokes the session regardless */
   }
-  await api("/api/push/disable", { method: "POST" }).catch(() => {});
+  await api("/api/push/disable", { method: "POST" }).catch(() => { });
   await renderPushState();
   toast("Notifications disabled", "success");
 });
@@ -2169,7 +2169,7 @@ function signalDone(kind = "success") {
     gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.32);
     oscillator.start();
     oscillator.stop(context.currentTime + 0.34);
-    setTimeout(() => context.close().catch(() => {}), 600);
+    setTimeout(() => context.close().catch(() => { }), 600);
   } catch {
     /* if audio permission is blocked, vibration still functions */
   }
@@ -2357,7 +2357,7 @@ $("#auth-disable").addEventListener("click", async () => {
 });
 
 $("#auth-logout").addEventListener("click", async () => {
-  await api("/api/auth/logout", { method: "POST" }).catch(() => {});
+  await api("/api/auth/logout", { method: "POST" }).catch(() => { });
   showLogin();
 });
 
@@ -2377,11 +2377,11 @@ async function boot() {
   hideLogin();
 
   const config = await loadConfig();
-  await refreshState().catch(() => {});
-  checkForUpdate().catch(() => {});
-  loadCollections().catch(() => {});
-  loadCapabilities().catch(() => {});
-  renderPushState().catch(() => {});
+  await refreshState().catch(() => { });
+  checkForUpdate().catch(() => { });
+  loadCollections().catch(() => { });
+  loadCapabilities().catch(() => { });
+  renderPushState().catch(() => { });
   prewarmScanner();
 
   if (!started) {
@@ -2392,7 +2392,7 @@ async function boot() {
     pollState();
     watchFeeder();
     // A long-lived PWA tab should still notice a release eventually.
-    setInterval(() => checkForUpdate().catch(() => {}), 6 * 3600 * 1000);
+    setInterval(() => checkForUpdate().catch(() => { }), 6 * 3600 * 1000);
   }
   if (params.get("action") === "scan" && config.setup_complete) startScan();
 }
@@ -2417,7 +2417,7 @@ function pollState() {
     const again = () => setTimeout(tick, pollDelay());
     // Do not poll while on the login screen to avoid repeated 401 errors.
     if (document.hidden || !$("#login-overlay").hidden) return again();
-    refreshState().catch(() => {}).finally(again);
+    refreshState().catch(() => { }).finally(again);
   };
   setTimeout(tick, pollDelay());
 }
@@ -2425,10 +2425,10 @@ function pollState() {
 // Keep the UI honest after the phone wakes the PWA back up.
 document.addEventListener("visibilitychange", () => {
   if (document.hidden || !$("#login-overlay").hidden) return;
-  refreshState().catch(() => {});
+  refreshState().catch(() => { });
   prewarmScanner();
   // Feeder status may have changed while app was in background; refresh on return.
-  pollTray().catch(() => {});
+  pollTray().catch(() => { });
 });
 
 // Pre-warms the scanner while settings are selected: idle scanners sleep
@@ -2438,7 +2438,7 @@ function prewarmScanner() {
   if (Date.now() - (state.prewarmedAt || 0) < 60000) return;
   state.prewarmedAt = Date.now();
   fetch("/api/scanner/prewarm", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
-    .catch(() => {});
+    .catch(() => { });
 }
 
 if ("serviceWorker" in navigator) {
@@ -2447,7 +2447,7 @@ if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.register("/sw.js");
       // Without this, an installed PWA would keep serving the stale app shell
       // until it is eventually restarted.
-      registration.update().catch(() => {});
+      registration.update().catch(() => { });
       let reloading = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (reloading) return;
