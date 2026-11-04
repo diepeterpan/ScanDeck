@@ -197,7 +197,7 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
         cutoff = float(config.get("auto_contrast_cutoff", 2.0))
     except (TypeError, ValueError):
         cutoff = 2.0
-    config["auto_contrast_cutoff"] = round(max(0.5, min(10.0, cutoff)), 1)
+    config["auto_contrast_cutoff"] = round(max(0.1, min(10.0, cutoff)), 1)
 
     config["mqtt_enabled"] = bool(config.get("mqtt_enabled"))
     config["mqtt_host"] = str(config.get("mqtt_host", "")).strip()

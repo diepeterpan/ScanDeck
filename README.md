@@ -140,10 +140,11 @@ rest_command:
 
 ### Post-Processing
 
-Two optional switches under *Settings → Post-processing* (disabled by default):
+Three optional switches under *Settings → Post-processing* (disabled by default):
 
 - **Skip blank pages** — especially helpful for duplex feeder scans. Evaluates ink density excluding the outer 4% margins so dust and cover shadows do not count as content. Pages with even single lines of text are kept. Skipped pages are logged.
 - **Deskew crooked pages** — straightens misaligned pages, improving Paperless OCR quality. Pages are re-rasterized; deviations under 0.4° are ignored.
+- **Auto contrast** — stretches the dynamic range using a noise-robust histogram linear contrast stretching algorithm before uploading to Paperless. Pushes off-white and light-gray backgrounds to clean white while darkening mid-tone pencil and text. For color scans, adjusts the luminance (HSV Value channel) to preserve color tones. Includes a configurable **Cutoff threshold** slider (0.1% to 10.0%, 0.1% steps; default 2.0%) to tune out scanner glass noise and dust without clipping content.
 
 ### History and Queue
 

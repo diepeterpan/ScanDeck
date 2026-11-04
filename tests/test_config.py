@@ -126,9 +126,9 @@ def test_auto_contrast_config_validation(deck):
     assert cfg["auto_contrast"] is True
     assert cfg["auto_contrast_cutoff"] == 4.5
 
-    # Test cutoff bounds clamping (0.5 to 10.0)
+    # Test cutoff bounds clamping (0.1 to 10.0)
     low = deck.validate_config({**default_config(), "auto_contrast_cutoff": -2.0})
-    assert low["auto_contrast_cutoff"] == 0.5
+    assert low["auto_contrast_cutoff"] == 0.1
     high = deck.validate_config({**default_config(), "auto_contrast_cutoff": 50.0})
     assert high["auto_contrast_cutoff"] == 10.0
 
