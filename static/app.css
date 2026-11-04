@@ -28,9 +28,9 @@
 
 * { box-sizing: border-box; }
 
-/* Muss vor allen Komponenten stehen: eine eigene display-Regel (etwa
-   .card { display: flex }) schlaegt sonst das hidden-Attribut und das Element
-   bleibt sichtbar. */
+/* Must precede all component styles: a custom display rule (e.g.,
+   .card { display: flex }) would otherwise override [hidden] and leave
+   the element visible. */
 [hidden] { display: none !important; }
 
 html, body {
@@ -368,8 +368,8 @@ body.batch-on .batch-bar { border-color: rgba(2, 132, 199, 0.45); background: rg
   touch-action: pan-y; /* long press starts the drag, a swipe still scrolls */
   cursor: grab;
   transition: transform 0.28s var(--ease), box-shadow 0.2s, opacity 0.2s;
-  /* Ohne das oeffnet iOS beim langen Druecken Lupe, Textauswahl und
-     Teilen-Menue statt den Zug zu starten. */
+  /* Without this, iOS long-press opens magnifier, text selection, and
+     the share sheet instead of initiating drag and drop. */
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
@@ -612,7 +612,7 @@ input[readonly] { color: var(--text-dim); }
 }
 .seg button:active { transform: scale(0.96); }
 .seg button.active { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.4); }
-/* Was das Geraet nicht kann, bleibt sichtbar, aber unwaehlbar. */
+/* Capabilities not supported by hardware remain visible but disabled. */
 .seg button:disabled { opacity: 0.32; cursor: not-allowed; text-decoration: line-through; }
 .seg button:disabled:active { transform: none; }
 
@@ -972,7 +972,7 @@ select:focus { outline: none; border-color: rgba(2, 132, 199, 0.65); }
 .feeder-chip.ok { color: var(--ok); border-color: rgba(5, 150, 105, 0.35); background: rgba(5, 150, 105, 0.1); }
 .feeder-chip.warn { color: var(--accent); border-color: rgba(2, 132, 199, 0.35); background: rgba(2, 132, 199, 0.1); }
 
-/* Seitenlupe im Stapel ---------------------------------------------------- */
+/* Batch page viewer ------------------------------------------------------- */
 .page-sheet {
   width: min(720px, 100%);
   max-height: calc(100vh - 40px);
@@ -1018,10 +1018,10 @@ select:focus { outline: none; border-color: rgba(2, 132, 199, 0.65); }
 #page-next { right: 8px; }
 .page-foot { display: flex; gap: 10px; flex-wrap: wrap; }
 .page-foot .btn { flex: 1 1 auto; }
-/* Kachel als anklickbare Lupe kennzeichnen. */
+/* Mark tile image with zoom-in cursor. */
 .batch-page img { cursor: zoom-in; }
 
-/* Geraeteuebersicht ------------------------------------------------------- */
+/* Device details ---------------------------------------------------------- */
 .device-sheet { display: grid; gap: 12px; }
 .device-source {
   border: 1px solid var(--line);

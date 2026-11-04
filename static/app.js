@@ -11,11 +11,11 @@ const LABELS = {
   output_format: { "application/pdf": "PDF", "image/jpeg": "JPEG" },
 };
 
-// Die Leiter, die im Alltag zaehlt. Unter 150 dpi wird Text unbrauchbar,
-// 1200 dpi ist ein Sonderfall und steht nur in den Einstellungen.
+// Practical resolutions for everyday scanning. Below 150 dpi text degrades,
+// 1200 dpi is a special case available only in settings.
 const DPI_STEPS = [150, 300, 600, 1200];
 const DPI_QUICK = [150, 300, 600];
-const DPI_SLOW = 1200; // dauert je nach Geraet Minuten
+const DPI_SLOW = 1200; // takes minutes depending on hardware
 
 const QUICK_CYCLE = {
   source: ["Platen", "Feeder"],
@@ -63,7 +63,7 @@ const state = {
 
 /* --- helpers ------------------------------------------------------------- */
 
-// Fehler und Warnungen wollen gelesen werden; eine Bestaetigung darf huschen.
+// Errors and warnings must be read; success confirmations can dismiss faster.
 const TOAST_SECONDS = { error: 12, warning: 9 };
 
 function toast(message, kind = "") {
@@ -86,8 +86,8 @@ async function api(url, options = {}) {
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    // Die Sitzung kann jederzeit ablaufen; dann zurueck zur Anmeldung, statt
-    // den Nutzer mit einem Fehler pro Hintergrundabfrage zu bewerfen.
+    // The session can expire at any time; return to sign-in instead of
+    // bombarding the user with errors for every background request.
     if (response.status === 401 && body.auth_required) {
       showLogin();
       throw Object.assign(new Error("Anmeldung erforderlich."), { authRequired: true });
@@ -121,7 +121,7 @@ function getSegment(target, fallback) {
   return active ? active.dataset.value : fallback;
 }
 
-// Beidseitig gibt es nur im Einzug; auf dem Flachbett waere die Option Unsinn.
+// Duplex is only supported on the feeder; on flatbed the option makes no sense.
 function syncDuplexRow() {
   const row = $("#duplex-row");
   if (!row) return;
@@ -129,13 +129,13 @@ function syncDuplexRow() {
   const canDuplex = !state.capabilities.known || state.capabilities.duplex;
   row.hidden = !feeder || !canDuplex;
   if (!row.hidden) return;
-  // Ein Geraet ohne beidseitigen Einzug soll den Schalter nicht nur verstecken,
-  // sondern die Einstellung auch nicht heimlich gesetzt lassen.
+  // A device without duplex feeder should not only hide the toggle,
+  // but also clear any hidden setting.
   if (feeder && !canDuplex) setValue("duplex", false);
 }
 
-// Eine Segmentgruppe auf das eingrenzen, was das Geraet kann. Ist eine
-// gesperrte Stufe gewaehlt, rueckt die Auswahl auf eine moegliche.
+// Constrain segmented controls to hardware capabilities. If a disabled
+// option is currently active, shift selection to an available one.
 function limitSegment(target, allowed, hint, fallback) {
   let repaired = null;
   $$(`.seg[data-target="${target}"] button`).forEach((button) => {
@@ -147,9 +147,8 @@ function limitSegment(target, allowed, hint, fallback) {
   if (repaired !== null && repaired !== undefined) setSegment(target, repaired);
 }
 
-// Was das Geraet nicht kann, wird gar nicht erst angeboten: ein Legal-Scan auf
-// einem A4-Vorlagenglas endete sonst in einem nackten "HTTP 409", und eine
-// Quelle, die es nicht gibt, waere nur ein Weg in eine Fehlermeldung.
+// Do not offer options unsupported by hardware: requesting Legal on an
+// A4 flatbed produces HTTP 409, and unavailable sources only cause errors.
 function syncDeviceLimits() {
   const caps = state.capabilities;
   const known = Boolean(caps.known);
@@ -183,7 +182,7 @@ function syncDeviceLimits() {
     (allowed) => allowed[0]
   );
 
-  // Die Obergrenze des Geraets entscheidet, welche Stufen der Leiter bleiben.
+  // The hardware limit determines which resolution presets remain available.
   renderResolutionSegment(maxDpi);
   syncDuplexRow();
   renderFeederState();
@@ -208,7 +207,7 @@ function renderResolutionSegment(maxDpi) {
       })
     );
   }
-  // Auf die naechstgelegene mögliche Stufe rücken, falls die gewählte fehlt.
+  // Fall back to the closest available option if the selected one is missing.
   const nearest = options.includes(wanted)
     ? wanted
     : options.reduce((best, value) => (Math.abs(value - wanted) < Math.abs(best - wanted) ? value : best),
@@ -219,7 +218,7 @@ function renderResolutionSegment(maxDpi) {
   if (note) note.hidden = nearest !== DPI_SLOW;
 }
 
-// Die Schnellschalter auf das eingrenzen, was der Scanner gemeldet hat.
+// Restrict quick-toggle presets to what the scanner reported.
 function quickOptions(key) {
   const caps = state.capabilities;
   const all = QUICK_CYCLE[key];
@@ -246,8 +245,8 @@ const ADF_TEXT = {
   ScannerAdfJam: ["Paper jam in feeder", "warn"],
 };
 
-// Beim Einzug ist die eine Frage vor dem Scan: liegt Papier drin und erkennt
-// es das Geraet? Das steht jetzt dort, wo die Quelle gewaehlt wird.
+// For feeder scans: is paper loaded and detected by the hardware?
+// Displayed directly where the scan source is selected.
 function renderFeederState() {
   const chip = $("#feeder-state");
   if (!chip) return;
@@ -265,15 +264,15 @@ function renderFeederState() {
 
 async function loadCapabilities({ tray = true } = {}) {
   const caps = await api(`/api/scanner/capabilities${tray ? "?tray=1" : ""}`).catch(() => ({ known: false }));
-  // Den Fachzustand nicht verlieren, wenn eine Abfrage ihn nicht mitliefert.
+  // Preserve the feeder state if a status query omits it.
   state.capabilities = { adf_state: state.capabilities.adf_state, ...caps };
   syncDeviceLimits();
   renderDeviceSheet();
   return caps;
 }
 
-// Ob Papier im Einzug liegt, aendert sich waehrend man davorsteht. Also wird
-// es laufend nachgefragt, solange der Einzug gewaehlt und die App sichtbar ist.
+// Paper in the feeder can change dynamically while standing in front of it,
+// so poll feeder state continuously while feeder is selected and app is visible.
 function feederWatchWanted() {
   return (
     (getSegment("source", state.config.source) || "Platen") === "Feeder" &&
@@ -302,7 +301,7 @@ function watchFeeder() {
 const COLOR_NAMES = { RGB24: "Color", Grayscale8: "Greyscale", BlackAndWhite1: "Black and White" };
 const FORMAT_NAMES = { "application/pdf": "PDF", "image/jpeg": "JPEG" };
 
-// Antwortet auf "was kann mein Drucker eigentlich?" - ausgelesen, nicht geraten.
+// Queries actual printer capabilities: read directly from device, not guessed.
 function renderDeviceSheet() {
   const caps = state.capabilities;
   const model = $("#device-model");
@@ -569,7 +568,7 @@ function applyConfig(config) {
   renderFoldStates(config);
 }
 
-// Eingeklappt heisst nicht "unsichtbar": am Titel steht, ob es an ist.
+// Collapsed does not mean hidden: status chip indicates whether it is active.
 function renderFoldStates(config) {
   const marks = [
     ["#paperless-state", config.upload_to_paperless, config.upload_to_paperless ? "active" : "off"],
@@ -871,8 +870,8 @@ function renderBatch(batch) {
       toolButton("remove", `Remove page ${index + 1}`, () => removePage(index))
     );
 
-    // Gross ansehen: auf dem Vorschaubild ist kaum zu erkennen, welche Seite
-    // welche ist - beim Sortieren ist genau das aber die Frage.
+    // Full preview: thumbnails are small; full size view is essential
+    // when ordering and reviewing pages.
     image.addEventListener("click", (event) => {
       event.stopPropagation();
       openPage(index);
@@ -883,7 +882,7 @@ function renderBatch(batch) {
     container.append(tile);
   });
 
-  // Steht die Lupe offen, zeigt sie nach jeder Aenderung den neuen Stand.
+  // If the page viewer is open, refresh it after every modification.
   if (!$("#page-overlay").hidden) showPage(state.pageIndex);
 
   const armedNow = armed !== null && armed !== undefined;
@@ -1406,7 +1405,7 @@ function handleProgress(event) {
         // Inside a batch the thumbnail strip is the feedback; a full-screen
         // preview after every page would only be in the way.
         loadBatch().catch(() => {});
-        // Ein Einzug liefert mehrere Blatt auf einmal; die Meldung muss das sagen.
+        // An ADF feeder scans multiple pages at once; the message reflects total captured.
         const added = event.added ?? 1;
         const what = added > 1 ? `${added} pages captured` : `Page ${(event.page_index ?? 0) + 1} captured`;
         toast(`${what} · ${event.pages} in batch`, "success");
@@ -1435,7 +1434,7 @@ function handleProgress(event) {
     $("#progress-title").textContent = "Failed";
     $("#progress-stage").textContent = event.error || "Unknown error";
     $("#scan-cancel").hidden = true;
-    // Fehler bleiben laenger stehen: sie wollen gelesen werden, nicht erahnt.
+    // Keep error messages visible longer so they can be read carefully.
     setTimeout(() => {
       hideProgress();
       setScanning(false);
@@ -1686,7 +1685,7 @@ $$(".seg").forEach((group) =>
         group.dataset.target === "resolution" ? Number(button.dataset.value) : button.dataset.value;
       renderQuickRow();
       syncDeviceLimits();
-      // Umschalten auf den Einzug: sofort nachsehen, ob Papier drin liegt.
+      // Switching to feeder: immediately check if paper is loaded.
       if (group.dataset.target === "source" && button.dataset.value === "Feeder") {
         pollTray().catch(() => {});
       }
@@ -1697,8 +1696,8 @@ $$(".seg").forEach((group) =>
 $$(".quick").forEach((button) =>
   button.addEventListener("click", async () => {
     const key = button.dataset.quick;
-    // Nur durchschalten, was das Geraet auch kann - sonst tippt man sich in
-    // eine Einstellung, die der Scanner beim naechsten Mal ablehnt.
+    // Cycle only through supported options to prevent selecting settings
+    // that the scanner will reject on next scan.
     const options = quickOptions(key);
     if (options.length < 2) {
       toast(`Your scanner only supports one option here.`, "warning");
@@ -1747,7 +1746,7 @@ $("#test-scanner").addEventListener("click", async () => {
   try {
     await saveSettings(false);
     const result = await api("/api/test/scanner", { method: "POST", body: "{}" });
-    // Der Test liefert die Geraetegrenzen gleich mit, also direkt anwenden.
+    // The test returns device capabilities; apply them immediately.
     state.capabilities = { ...result, known: true };
     syncDeviceLimits();
     toast(`${result.model} · eSCL ${result.version}`, "success");
@@ -2012,7 +2011,7 @@ function renderProfileEditor() {
   );
 }
 
-// Ein neues Profil uebernimmt, was gerade eingestellt ist - das ist fast immer
+// A new profile adopts current settings, which is almost always what is wanted.
 // gemeint, wenn jemand "so wie jetzt, aber gemerkt" moechte.
 function currentScanSettings() {
   return {
@@ -2108,7 +2107,7 @@ $("#push-disable").addEventListener("click", async () => {
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) await subscription.unsubscribe();
   } catch {
-    /* lokale Abmeldung ist Kür; der Server vergisst ohnehin alle */
+    /* local sign-out; server revokes the session regardless */
   }
   await api("/api/push/disable", { method: "POST" }).catch(() => {});
   await renderPushState();
@@ -2134,7 +2133,7 @@ $("#mqtt-test").addEventListener("click", async () => {
 
 /* --- Ton und Vibration ---------------------------------------------------- */
 
-// Man legt das Telefon weg, waehrend der Scanner arbeitet - ein kurzes Signal
+// Users often set the phone down during a scan: audio/vibration signals completion.
 // erspart das Nachsehen.
 function signalDone(kind = "success") {
   if (!state.config.sound_enabled) return;
@@ -2146,7 +2145,7 @@ function signalDone(kind = "success") {
     oscillator.connect(gain);
     gain.connect(context.destination);
     oscillator.type = "sine";
-    // Zwei kurze Toene nach oben bei Erfolg, einer nach unten bei Fehler.
+    // Two rising chime tones on success, one descending tone on error.
     oscillator.frequency.setValueAtTime(kind === "error" ? 420 : 660, context.currentTime);
     oscillator.frequency.setValueAtTime(kind === "error" ? 300 : 880, context.currentTime + 0.12);
     gain.gain.setValueAtTime(0.14, context.currentTime);
@@ -2155,7 +2154,7 @@ function signalDone(kind = "success") {
     oscillator.stop(context.currentTime + 0.34);
     setTimeout(() => context.close().catch(() => {}), 600);
   } catch {
-    /* ohne Audio-Erlaubnis bleibt die Vibration */
+    /* if audio permission is blocked, vibration still functions */
   }
 }
 
@@ -2272,7 +2271,7 @@ $("#login-form").addEventListener("submit", async (event) => {
     hideLogin();
     await boot();
   } catch (error) {
-    // Der 401 der Anmeldung ist die Antwort selbst, nicht der Rauswurf.
+    // A 401 during sign-in is the authentication result, not a session eviction.
     $("#login-error").hidden = false;
     $("#login-error").textContent = error.message;
     $("#login-password").select();
@@ -2287,7 +2286,7 @@ $("#device-refresh").addEventListener("click", async () => {
   const button = $("#device-refresh");
   button.disabled = true;
   try {
-    // Ueber den Test statt den Cache: der liest das Geraet wirklich neu aus.
+    // Query device directly rather than using cache to get fresh status.
     const result = await api("/api/test/scanner", { method: "POST", body: "{}" });
     state.capabilities = { ...result, known: true };
     syncDeviceLimits();
@@ -2370,7 +2369,7 @@ async function boot() {
 
   if (!started) {
     started = true;
-    // Erst nach der Anmeldung verbinden: ein Ereignisstrom gegen eine
+    // Connect event stream only after authentication to avoid 401 storms.
     // geschlossene Tuer wuerde nur endlos neu verbinden.
     connectEvents();
     pollState();
@@ -2399,7 +2398,7 @@ function pollDelay() {
 function pollState() {
   const tick = () => {
     const again = () => setTimeout(tick, pollDelay());
-    // Nicht gegen die Anmeldemaske pollen: das brächte nur 401 im Takt.
+    // Do not poll while on the login screen to avoid repeated 401 errors.
     if (document.hidden || !$("#login-overlay").hidden) return again();
     refreshState().catch(() => {}).finally(again);
   };
@@ -2411,12 +2410,12 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden || !$("#login-overlay").hidden) return;
   refreshState().catch(() => {});
   prewarmScanner();
-  // Ob Papier im Einzug liegt, kann sich geaendert haben, waehrend die App weg war.
+  // Feeder status may have changed while app was in background; refresh on return.
   pollTray().catch(() => {});
 });
 
-// Weckt den Scanner, waehrend der Nutzer noch waehlt: HP-Geraete schlafen ein
-// und brauchen sonst beim ersten Scan spuerbar laenger.
+// Pre-warms the scanner while settings are selected: idle scanners sleep
+// and take significantly longer on the first scan otherwise.
 function prewarmScanner() {
   if (!state.config.prewarm_enabled || !state.config.scanner_url || state.running) return;
   if (Date.now() - (state.prewarmedAt || 0) < 60000) return;
@@ -2429,8 +2428,8 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
       const registration = await navigator.serviceWorker.register("/sw.js");
-      // Ohne das zeigt eine installierte App weiter die alte Oberflaeche, bis
-      // sie irgendwann von selbst neu startet.
+      // Without this, an installed PWA would keep serving the stale app shell
+      // until it is eventually restarted.
       registration.update().catch(() => {});
       let reloading = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {

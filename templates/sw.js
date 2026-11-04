@@ -1,8 +1,8 @@
 /* Scan Deck service worker: app shell offline, API always live.
-   Diese Datei wird von Flask ausgeliefert, damit die Version eingesetzt werden
-   kann. Der Cache-Name enthaelt sie: jede neue Version bekommt einen eigenen
-   Cache, alte werden beim Aktivieren geloescht. Ohne das wuerde eine
-   installierte App das CSS und JS der ersten Installation behalten. */
+   This file is served dynamically by Flask so the version can be injected.
+   The cache name includes the version: each new version gets its own cache,
+   and old ones are pruned during activation. Without this, an installed app
+   would permanently retain the CSS and JS from its first installation. */
 const VERSION = "{{ version }}";
 const SHELL_CACHE = `scandeck-shell-${VERSION}`;
 const SHELL_ASSETS = [
@@ -29,13 +29,13 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-/* Push: erreicht die installierte App auch, wenn sie geschlossen ist. */
+/* Push: reaches the installed app even when it is closed. */
 self.addEventListener("push", (event) => {
   let payload = { title: "ScanDeck", body: "Scan complete.", tag: "scandeck" };
   try {
     if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {
-    /* Text statt JSON: dann bleibt die Vorgabe stehen */
+    /* Plain text instead of JSON: keep default payload */
   }
   event.waitUntil(
     self.registration.showNotification(payload.title, {
@@ -49,7 +49,7 @@ self.addEventListener("push", (event) => {
   );
 });
 
-/* Tippen auf die Meldung bringt die App nach vorn, statt sie neu zu oeffnen. */
+/* Tapping the notification brings the app window to the front instead of reopening. */
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(
@@ -83,9 +83,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Stale-while-revalidate: aus dem Cache antworten, aber im Hintergrund
-  // erneuern. Damit landet eine Aenderung spaetestens beim naechsten Start,
-  // auch wenn die Versionsnummer einmal gleich bleibt.
+  // Stale-while-revalidate: respond from cache immediately while fetching
+  // updates in the background. Changes land at the latest on the next launch,
+  // even if the version number remains unchanged.
   event.respondWith(
     caches.open(SHELL_CACHE).then((cache) =>
       cache.match(request).then((cached) => {

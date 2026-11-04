@@ -1506,7 +1506,7 @@ def ha_test() -> Response:
     return jsonify({"ok": True, "message": "Connection established."})
 
 
-# Erst starten, wenn alle Funktionen definiert sind.
+# Start worker thread only after all functions are defined.
 threading.Thread(target=queue_worker, daemon=True, name="scandeck-queue").start()
 
 

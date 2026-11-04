@@ -40,7 +40,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "title_prefix": "Scan",
     "preview_seconds": 10,
     "update_check": True,
-    # Extras bleiben aus, damit die Startoberflaeche schlank bleibt.
+    # Optional features stay disabled by default to keep the initial UI lightweight.
     "metadata_enabled": False,
     "quick_tags_enabled": False,
     "cleanup_enabled": False,

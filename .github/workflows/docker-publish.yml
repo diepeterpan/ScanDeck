@@ -1,8 +1,8 @@
 name: Docker Image
 
-# Baut das Container-Image und veroeffentlicht es in der GitHub Container
-# Registry: bei jedem Push auf main als :latest, bei jedem Tag v* zusaetzlich
-# unter der Versionsnummer.
+# Builds the container image and publishes it to the GitHub Container
+# Registry: on every push to main as :latest, and on every tag v* additionally
+# under the version number.
 on:
   push:
     branches: [main]
@@ -22,16 +22,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Python einrichten
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
 
-      - name: Abhaengigkeiten installieren
+      - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
-      - name: Tests ausfuehren
+      - name: Run tests
         run: pytest -q
 
   build:
@@ -45,27 +45,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Version aus VERSION lesen
+      - name: Read version from VERSION file
         id: version
         run: echo "value=$(cat VERSION)" >> "$GITHUB_OUTPUT"
 
-      - name: Tag gegen VERSION pruefen
+      - name: Verify tag matches VERSION file
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           tag="${GITHUB_REF_NAME#v}"
           file="$(cat VERSION)"
           if [ "$tag" != "$file" ]; then
-            echo "Tag $GITHUB_REF_NAME passt nicht zur VERSION-Datei ($file)." >&2
+            echo "Tag $GITHUB_REF_NAME does not match VERSION file ($file)." >&2
             exit 1
           fi
 
-      - name: QEMU einrichten
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Buildx einrichten
+      - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: An der Registry anmelden
+      - name: Log in to Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
@@ -73,7 +73,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Tags und Labels bestimmen
+      - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -86,7 +86,7 @@ jobs:
           labels: |
             org.opencontainers.image.version=${{ steps.version.outputs.value }}
 
-      - name: Bauen und veroeffentlichen
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .

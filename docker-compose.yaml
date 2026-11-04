@@ -12,12 +12,12 @@ services:
       APP_DATA_DIR: /data
       SCAN_OUTPUT_DIR: /scans
 
-      # Optional: Dateien einem Host-Benutzer zuordnen (id -u / id -g)
+      # Optional: Map files to a host user (id -u / id -g)
       # PUID: 1000
       # PGID: 1000
 
-      # Optional: Einrichtungsassistent vorbelegen
+      # Optional: Pre-seed setup wizard settings
       # SCANNER_URL: https://10.0.0.31:443
       # DISCOVERY_SUBNET: 10.0.0.0/24
       # PAPERLESS_URL: http://paperless:8000
-      # PAPERLESS_TOKEN: dein-token
+      # PAPERLESS_TOKEN: your-token
