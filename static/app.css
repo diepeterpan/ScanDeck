@@ -557,6 +557,86 @@ input[readonly] { color: var(--text-dim); }
 .copy-field { display: flex; gap: 8px; align-items: center; }
 .copy-field input { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
 
+/* Range Slider ------------------------------------------------------------ */
+.auto-contrast-box {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(2, 132, 199, 0.05);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+}
+
+.range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  outline: none;
+  margin: 10px 0 4px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  transition: background 0.2s;
+}
+
+.range-slider:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* WebKit / Chromium / Safari - Vertical thumb */
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--accent);
+  cursor: ew-resize;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scaleY(1.1);
+  background: #0284C7;
+}
+
+.range-slider::-webkit-slider-thumb:active {
+  transform: scaleY(1.15) scaleX(1.1);
+  background: #0369A1;
+}
+
+/* Firefox - Vertical thumb */
+.range-slider::-moz-range-thumb {
+  width: 8px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--accent);
+  cursor: ew-resize;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.range-slider::-moz-range-thumb:hover {
+  transform: scaleY(1.1);
+  background: #0284C7;
+}
+
+.range-slider::-moz-range-thumb:active {
+  transform: scaleY(1.15) scaleX(1.1);
+  background: #0369A1;
+}
+
+.range-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
 /* Switch ------------------------------------------------------------------ */
 .switch { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 14.5px; }
 .switch input { position: absolute; opacity: 0; pointer-events: none; }

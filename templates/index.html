@@ -335,12 +335,12 @@
           <p class="hint">Straightens crooked pages. The page is re-rasterized, taking an extra moment, but noticeably improves Paperless OCR quality.</p>
           <label class="switch"><input id="auto-contrast" type="checkbox"><i></i><span>Auto contrast</span></label>
           <p class="hint">Stretches dynamic range to brighten light backgrounds and darken mid-tone text before sending to Paperless.</p>
-          <div id="auto-contrast-settings" class="field" hidden style="margin-top: 10px;">
+          <div id="auto-contrast-settings" class="field auto-contrast-box" hidden>
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span class="field-label">Cutoff threshold</span>
               <strong id="auto-contrast-cutoff-val" style="font-size: 13px; color: var(--text);">2.0%</strong>
             </div>
-            <input id="auto-contrast-cutoff" type="range" min="0.5" max="10.0" step="0.5" value="2.0" style="width: 100%; cursor: pointer;">
+            <input id="auto-contrast-cutoff" class="range-slider" type="range" min="0.5" max="10.0" step="0.5" value="2.0">
             <p class="hint">Cuts off extreme dark/light pixels so background noise or dust does not restrict dynamic range stretching.</p>
           </div>
         </section>
