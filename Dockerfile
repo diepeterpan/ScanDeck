@@ -5,7 +5,7 @@ ARG APP_VERSION=1.0.0
 LABEL org.opencontainers.image.title="ScanDeck" \
       org.opencontainers.image.description="Weboberflaeche fuer eSCL-Netzwerkscanner mit Paperless-ngx-Upload und Home-Assistant-Schnittstelle." \
       org.opencontainers.image.version="${APP_VERSION}" \
-      org.opencontainers.image.source="https://github.com/derSumo/ScanDeck" \
+      org.opencontainers.image.source="https://github.com/diepeterpan/ScanDeck" \
       org.opencontainers.image.licenses="MIT"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

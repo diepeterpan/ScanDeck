@@ -15,6 +15,6 @@ def read_version() -> str:
 
 
 APP_VERSION = read_version()
-GITHUB_REPO = os.environ.get("GITHUB_REPO", "derSumo/ScanDeck")
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "diepeterpan/ScanDeck")
 RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases"
 USER_AGENT = f"ScanDeck/{APP_VERSION}"

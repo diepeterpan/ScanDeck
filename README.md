@@ -31,7 +31,7 @@ docker run -d \
   -v ./data:/data \
   -v ./scans:/scans \
   --restart unless-stopped \
-  ghcr.io/dersumo/scandeck:latest
+  ghcr.io/diepeterpan/scandeck:latest
 ```
 
 Then open `http://localhost:8080` in your browser (or use your server's LAN IP from your phone, e.g. `http://192.168.1.10:8080`).

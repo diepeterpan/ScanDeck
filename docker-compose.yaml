@@ -1,6 +1,6 @@
 services:
   scandeck:
-    image: ghcr.io/dersumo/scandeck:latest
+    image: ghcr.io/diepeterpan/scandeck:latest
     container_name: scandeck
     restart: unless-stopped
     ports:
